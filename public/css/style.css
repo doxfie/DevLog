@@ -522,6 +522,14 @@ body {
 }
 .goal-item input[type="checkbox"]:not(:checked) { opacity: 0.6; }
 .goal-item input[type="checkbox"]:checked { accent-color: var(--accent); opacity: 1; }
+.goal-item:has(.goal-text.not_done) input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  opacity: 1;
+  border: none;
+  border-radius: 3px;
+  background: var(--error-bright);
+}
 .goal-item .goal-text { flex: 0 1 auto; min-width: 0; font-size: 14px; }
 .goal-item .goal-text.done { text-decoration: line-through; color: var(--text-muted); }
 .goal-item .goal-text.not_done { text-decoration: line-through; color: var(--error-bright); }

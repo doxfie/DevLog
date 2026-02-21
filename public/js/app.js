@@ -173,7 +173,6 @@ function renderCurrentWeekGoals() {
       checkbox.addEventListener('change', () => updateGoalStatus(checkbox.checked ? 'done' : 'pending'));
       btnNotDone.addEventListener('click', () => {
         updateGoalStatus(textSpan.classList.contains('not_done') ? 'pending' : 'not_done');
-        checkbox.checked = false;
       });
       listEl.appendChild(item);
     });
