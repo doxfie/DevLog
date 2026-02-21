@@ -46,10 +46,8 @@ function getPauseElapsedMinutes() {
 }
 
 function updatePauseElapsedDisplay() {
-  const span = el('pauseElapsed');
   const min = getPauseElapsedMinutes();
-  span.textContent = `+ ${min} мин`;
-  span.classList.remove('hidden');
+  el('pauseLabel').textContent = `${min} мин · Стоп`;
 }
 
 export function stopPause() {
@@ -63,15 +61,14 @@ export function stopPause() {
   saveDraft();
   try { localStorage.removeItem(PAUSE_KEY); } catch (_) {}
   pauseStartedAt = null;
-  el('btnPause').textContent = 'Начать перерыв';
+  el('pauseLabel').textContent = 'Перерыв';
   el('btnPause').classList.remove('paused');
-  el('pauseElapsed').classList.add('hidden');
 }
 
 export function startPause() {
   pauseStartedAt = Date.now();
   try { localStorage.setItem(PAUSE_KEY, String(pauseStartedAt)); } catch (_) {}
-  el('btnPause').textContent = 'Закончить перерыв';
+  el('pauseLabel').textContent = '0 мин · Стоп';
   el('btnPause').classList.add('paused');
   updatePauseElapsedDisplay();
   pauseIntervalId = setInterval(updatePauseElapsedDisplay, 1000);
@@ -89,7 +86,7 @@ export function restorePauseState() {
     const ts = parseInt(saved, 10);
     if (isNaN(ts)) return;
     pauseStartedAt = ts;
-    el('btnPause').textContent = 'Закончить перерыв';
+    el('pauseLabel').textContent = '0 мин · Стоп';
     el('btnPause').classList.add('paused');
     updatePauseElapsedDisplay();
     pauseIntervalId = setInterval(updatePauseElapsedDisplay, 1000);

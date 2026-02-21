@@ -283,6 +283,9 @@ body {
 #sessionForm .field-breaks input { width: 5rem; }
 
 #sessionForm .btn-pause {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text);
@@ -293,12 +296,18 @@ body {
   white-space: nowrap;
 }
 #sessionForm .btn-pause:hover { background: var(--bg-card); }
-#sessionForm .btn-pause.paused {
-  background: #5a3a3a;
-  border-color: #8b5353;
-  color: #e0a0a0;
+#sessionForm .btn-pause .pause-icon {
+  display: inline-flex;
+  flex-shrink: 0;
 }
-.pause-elapsed { font-size: 0.8rem; color: var(--text-muted); }
+#sessionForm .btn-pause .pause-icon svg { display: block; }
+#sessionForm .btn-pause.paused .pause-icon {
+  animation: pause-icon-pulse 1.2s ease-in-out infinite;
+}
+@keyframes pause-icon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 
 #sessionForm input,
 #sessionForm textarea {

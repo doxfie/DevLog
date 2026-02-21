@@ -55,8 +55,14 @@
               <label for="fieldBreaks">Перерывы (мин)</label>
               <div class="breaks-row">
                 <input type="number" name="breaks" id="fieldBreaks" min="0" value="0">
-                <button type="button" id="btnPause" class="btn-pause">Начать перерыв</button>
-                <span id="pauseElapsed" class="pause-elapsed hidden"></span>
+                <button type="button" id="btnPause" class="btn-pause">
+                  <span class="pause-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+                    </svg>
+                  </span>
+                  <span id="pauseLabel" class="pause-label">Перерыв</span>
+                </button>
               </div>
             </div>
           </div>
