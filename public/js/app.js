@@ -109,7 +109,7 @@ async function refreshSessions() {
   updatePeriodLabel();
   renderSessions(list);
   renderCurrentWeekGoals();
-  renderWeekNotesSection(list);
+  renderCurrentWeekSummary();
 }
 
 // ——— Итоги месяца ———
@@ -221,35 +221,62 @@ function submitNewGoal() {
   });
 }
 
-// ——— Итоги и цели по неделям ———
+/** При отображении убираем ведущие дефисы с начала строк (для старых данных из экселя). */
+function stripSummaryDashes(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text.split('\n').map((line) => line.replace(/^\s*[-–—]\s*/, '')).join('\n').trim();
+}
 
-function renderWeekNotesSection(sessionsList) {
-  clampSelectedWeekToMonth();
-  const weekKey = selectedWeekKey;
-  const inMonth = getWeekKeysInMonth(currentYear, currentMonth);
-  if (!weekKey || !inMonth.includes(weekKey)) {
-    el('weekNotesList').innerHTML = '';
-    return;
-  }
-  const byWeek = aggregateByWeek(sessionsList || []);
-  const totalMin = byWeek[weekKey] || 0;
-  const label = formatWeekLabel(weekKey);
-  const container = el('weekNotesList');
-  container.innerHTML = '';
-  const card = document.createElement('div');
-  card.className = 'week-note-card';
-  card.innerHTML = `
-    <h3>Неделя ${label} (Всего: ${formatDuration(totalMin)})</h3>
-    <label class="week-summary-label">Итоги недели</label>
-    <textarea class="week-summary-input" placeholder="Что сделал за неделю..."></textarea>
-  `;
-  const summaryInput = card.querySelector('.week-summary-input');
+function renderCurrentWeekSummary() {
+  const weekKey = selectedWeekKey || getCurrentWeekKey();
+  const viewEl = el('currentWeekSummaryView');
+  const textEl = el('currentWeekSummaryText');
+  const btnEl = el('btnToggleWeekSummary');
+  const wrapEl = el('goalSummaryInputWrap');
   loadWeekNote(weekKey).then(({ summary }) => {
-    summaryInput.value = summary || '';
-    autoResizeTextarea(summaryInput);
+    const hasSummary = summary && summary.trim().length > 0;
+    if (hasSummary) {
+      textEl.textContent = stripSummaryDashes(summary);
+      textEl.classList.remove('hidden');
+      btnEl.textContent = 'Изменить';
+      btnEl.setAttribute('aria-label', 'Изменить итоги недели');
+    } else {
+      textEl.classList.add('hidden');
+      textEl.textContent = '';
+      btnEl.textContent = '+ Итоги недели';
+      btnEl.setAttribute('aria-label', 'Итоги недели');
+    }
+    wrapEl.classList.add('hidden');
   });
-  summaryInput.addEventListener('blur', () => saveWeekNote(weekKey, summaryInput.value.trim(), undefined));
-  container.appendChild(card);
+}
+
+function showSummaryInput() {
+  const weekKey = selectedWeekKey || getCurrentWeekKey();
+  const viewEl = el('currentWeekSummaryView');
+  const wrapEl = el('goalSummaryInputWrap');
+  const inputEl = el('goalSummaryInput');
+  loadWeekNote(weekKey).then(({ summary }) => {
+    inputEl.value = summary || '';
+    viewEl.classList.add('hidden');
+    wrapEl.classList.remove('hidden');
+    inputEl.focus();
+    autoResizeTextarea(inputEl);
+  });
+}
+
+function hideSummaryInput() {
+  el('currentWeekSummaryView').classList.remove('hidden');
+  el('goalSummaryInputWrap').classList.add('hidden');
+}
+
+function submitWeekSummary() {
+  const inputEl = el('goalSummaryInput');
+  const weekKey = selectedWeekKey || getCurrentWeekKey();
+  const summary = inputEl.value.trim();
+  saveWeekNote(weekKey, summary, undefined).then(() => {
+    hideSummaryInput();
+    renderCurrentWeekSummary();
+  });
 }
 
 // ——— Форма: автозаполнение, валидация, отправка ———
@@ -494,6 +521,9 @@ function init() {
   });
   el('goalNewInput').addEventListener('blur', submitNewGoal);
 
+  el('btnToggleWeekSummary').addEventListener('click', showSummaryInput);
+  el('goalSummaryInput').addEventListener('blur', submitWeekSummary);
+
   el('prevMonth').addEventListener('click', () => {
     currentMonth--;
     if (currentMonth < 1) { currentMonth = 12; currentYear--; }
@@ -522,7 +552,7 @@ function init() {
     updatePeriodLabel();
     renderCurrentWeekGoals();
     renderSessions(sessionsListCache);
-    renderWeekNotesSection(sessionsListCache);
+    renderCurrentWeekSummary();
   });
   el('nextWeek').addEventListener('click', () => {
     const nextKey = getNextWeekKey(selectedWeekKey);
@@ -535,7 +565,7 @@ function init() {
     updatePeriodLabel();
     renderCurrentWeekGoals();
     renderSessions(sessionsListCache);
-    renderWeekNotesSection(sessionsListCache);
+    renderCurrentWeekSummary();
   });
 
   document.querySelectorAll('.sessions-view-toggle .toggle-btn').forEach((btn) => {

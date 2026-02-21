@@ -39,6 +39,15 @@
           <input type="text" id="goalNewInput" class="goal-new-input" placeholder="Новая цель..." maxlength="500" autocomplete="off">
         </div>
         <p id="currentWeekGoalsEmpty" class="goals-empty hidden">Цели на эту неделю не заданы.</p>
+        <div id="currentWeekSummaryBlock" class="goals-summary-block">
+          <div id="currentWeekSummaryView" class="goals-summary-view">
+            <p id="currentWeekSummaryText" class="goals-summary-text hidden"></p>
+            <button type="button" id="btnToggleWeekSummary" class="btn-summary-toggle" aria-label="Итоги недели">+ Итоги недели</button>
+          </div>
+          <div id="goalSummaryInputWrap" class="goal-new-input-wrap hidden">
+            <textarea id="goalSummaryInput" class="goal-summary-input" placeholder="Что сделал за неделю..." rows="3"></textarea>
+          </div>
+        </div>
       </section>
       <section class="form-section">
         <h2 id="formTitle">Новая сессия</h2>
@@ -119,10 +128,6 @@
           </tbody>
         </table>
         <p id="emptyState" class="empty-state">Нет сессий за выбранный период.</p>
-      </section>
-      <section class="week-notes-section">
-        <h2>Итоги и цели выбранной недели</h2>
-        <div id="weekNotesList"></div>
       </section>
       <section class="month-summary-section diary-month-summary">
         <h2>Итоги месяца <span id="diaryMonthSummaryLabel" class="muted"></span></h2>
