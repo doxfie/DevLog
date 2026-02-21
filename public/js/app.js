@@ -136,6 +136,9 @@ function renderDashboardMonthSummary() {
 
 // ——— Цели на эту неделю ———
 
+const SVG_NOT_DONE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+const SVG_DELETE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
 function renderCurrentWeekGoals() {
   const weekKey = selectedWeekKey || getCurrentWeekKey();
   const previousKey = getPreviousWeekKey(weekKey);
@@ -157,11 +160,13 @@ function renderCurrentWeekGoals() {
       item.innerHTML = `
         <input type="checkbox" id="${id}" ${status === 'done' ? 'checked' : ''} data-week-key="${previousKey}" data-index="${index}" aria-label="Выполнена">
         <span class="goal-text ${status}">${escapeHtml(text) || '—'}</span>
-        <button type="button" class="btn-goal-dismiss" title="Не выполнена" aria-label="Не выполнена">&#x2715;</button>
+        <button type="button" class="btn-goal-not-done" title="Не выполнена" aria-label="Не выполнена">${SVG_NOT_DONE}</button>
+        <button type="button" class="btn-goal-delete" title="Удалить цель" aria-label="Удалить цель">${SVG_DELETE}</button>
       `;
       const checkbox = item.querySelector('input[type="checkbox"]');
       const textSpan = item.querySelector('.goal-text');
-      const btnNotDone = item.querySelector('.btn-goal-dismiss');
+      const btnNotDone = item.querySelector('.btn-goal-not-done');
+      const btnDelete = item.querySelector('.btn-goal-delete');
       const updateGoalStatus = (newStatus) => {
         const goalsCopy = goals.slice();
         goalsCopy[index] = { ...goalsCopy[index], text: goalsCopy[index]?.text ?? '', status: newStatus };
@@ -174,8 +179,45 @@ function renderCurrentWeekGoals() {
       btnNotDone.addEventListener('click', () => {
         updateGoalStatus(textSpan.classList.contains('not_done') ? 'pending' : 'not_done');
       });
+      btnDelete.addEventListener('click', () => {
+        const goalsCopy = goals.slice();
+        goalsCopy.splice(index, 1);
+        saveWeekNote(previousKey, undefined, goalsCopy).then(() => renderCurrentWeekGoals());
+      });
       listEl.appendChild(item);
     });
+  });
+}
+
+function showAddGoalInput() {
+  const wrap = el('goalNewInputWrap');
+  const input = el('goalNewInput');
+  wrap.classList.remove('hidden');
+  input.value = '';
+  input.focus();
+}
+
+function hideAddGoalInput() {
+  el('goalNewInputWrap').classList.add('hidden');
+  el('goalNewInput').value = '';
+}
+
+function submitNewGoal() {
+  const input = el('goalNewInput');
+  const text = input.value.trim();
+  if (!text) {
+    hideAddGoalInput();
+    return;
+  }
+  const weekKey = selectedWeekKey || getCurrentWeekKey();
+  const previousKey = getPreviousWeekKey(weekKey);
+  loadWeekNote(previousKey).then(({ goals }) => {
+    const list = Array.isArray(goals) ? goals.slice() : [];
+    list.push({ text, status: 'pending' });
+    return saveWeekNote(previousKey, undefined, list);
+  }).then(() => {
+    hideAddGoalInput();
+    renderCurrentWeekGoals();
   });
 }
 
@@ -190,7 +232,6 @@ function renderWeekNotesSection(sessionsList) {
     return;
   }
   const byWeek = aggregateByWeek(sessionsList || []);
-  const nextKey = getNextWeekKey(weekKey);
   const totalMin = byWeek[weekKey] || 0;
   const label = formatWeekLabel(weekKey);
   const container = el('weekNotesList');
@@ -201,27 +242,13 @@ function renderWeekNotesSection(sessionsList) {
     <h3>Неделя ${label} (Всего: ${formatDuration(totalMin)})</h3>
     <label class="week-summary-label">Итоги недели</label>
     <textarea class="week-summary-input" placeholder="Что сделал за неделю..."></textarea>
-    <label class="week-goals-label">Цели на следующую неделю</label>
-    <div class="week-goals-editor">
-      <textarea class="week-goals-input" placeholder="По одной цели на строку или через «- »"></textarea>
-    </div>
   `;
   const summaryInput = card.querySelector('.week-summary-input');
-  const goalsInput = card.querySelector('.week-goals-input');
   loadWeekNote(weekKey).then(({ summary }) => {
     summaryInput.value = summary || '';
     autoResizeTextarea(summaryInput);
   });
-  loadWeekNote(nextKey).then(({ goals }) => {
-    const text = Array.isArray(goals) ? goals.map((g) => (g && g.text) ? g.text : '').join('\n') : '';
-    goalsInput.value = text;
-    autoResizeTextarea(goalsInput);
-  });
   summaryInput.addEventListener('blur', () => saveWeekNote(weekKey, summaryInput.value.trim(), undefined));
-  goalsInput.addEventListener('blur', () => {
-    const lines = goalsInput.value.split('\n').map((s) => s.replace(/^\s*[-–—]\s*/, '').trim()).filter(Boolean);
-    saveWeekNote(nextKey, undefined, lines.map((text) => ({ text, status: 'pending' })));
-  });
   container.appendChild(card);
 }
 
@@ -460,6 +487,12 @@ function init() {
 
   el('sessionForm').addEventListener('submit', submitSession);
   el('btnPause').addEventListener('click', togglePause);
+
+  el('btnAddGoal').addEventListener('click', showAddGoalInput);
+  el('goalNewInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); submitNewGoal(); }
+  });
+  el('goalNewInput').addEventListener('blur', submitNewGoal);
 
   el('prevMonth').addEventListener('click', () => {
     currentMonth--;

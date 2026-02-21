@@ -508,6 +508,7 @@ body {
    ========================================================================== */
 
 .current-week-goals-section {
+  position: relative;
   margin-bottom: 1.5rem;
   padding: 1rem;
   background: var(--bg-card);
@@ -515,6 +516,47 @@ body {
   border-radius: var(--radius);
 }
 .current-week-goals-section h2 { margin: 0 0 0.75rem; font-size: 16px; font-weight: 600; }
+
+.btn-add-goal {
+  position: absolute;
+  top: 0.9rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease, color 0.15s ease, background 0.15s ease;
+}
+.current-week-goals-section:hover .btn-add-goal { opacity: 1; visibility: visible; }
+.btn-add-goal:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
+.btn-add-goal svg { display: block; }
+
+.goal-new-input-wrap {
+  margin-top: 0.5rem;
+}
+.goal-new-input-wrap.hidden { display: none; }
+.goal-new-input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font-size: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  box-sizing: border-box;
+}
+.goal-new-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .goals-list { display: flex; flex-direction: column; gap: 0.35rem; }
 .goals-empty { color: var(--text-muted); font-size: 14px; margin: 0; }
 
@@ -543,10 +585,10 @@ body {
 .goal-item .goal-text { flex: 0 1 auto; min-width: 0; font-size: 14px; }
 .goal-item .goal-text.done { text-decoration: line-through; color: var(--text-muted); }
 .goal-item .goal-text.not_done { text-decoration: line-through; color: var(--error-bright); }
-.goal-item .btn-goal-dismiss {
+.goal-item .btn-goal-not-done,
+.goal-item .btn-goal-delete {
   flex-shrink: 0;
   padding: 3px 5px;
-  font-size: 13px;
   line-height: 1;
   background: none;
   border: none;
@@ -556,9 +598,16 @@ body {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.25s ease, visibility 0.25s ease, color 0.15s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.goal-item:hover .btn-goal-dismiss { opacity: 1; visibility: visible; }
-.goal-item .btn-goal-dismiss:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
+.goal-item .btn-goal-not-done svg,
+.goal-item .btn-goal-delete svg { display: block; }
+.goal-item:hover .btn-goal-not-done,
+.goal-item:hover .btn-goal-delete { opacity: 1; visibility: visible; }
+.goal-item .btn-goal-not-done:hover { color: var(--error-bright); background: rgba(255, 255, 255, 0.08); }
+.goal-item .btn-goal-delete:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
 
 /* ==========================================================================
    Week Notes
