@@ -36,6 +36,7 @@
       </section>
       <section class="form-section">
         <h2 id="formTitle">Новая сессия</h2>
+        <button type="button" id="btnClearForm" class="btn-clear-form" title="Очистить форму">&#x2715;</button>
         <form id="sessionForm">
           <div class="row-fields">
             <div class="field">
@@ -118,7 +119,7 @@
     </main>
 
     <main id="viewDashboard" class="view main view--hidden" role="tabpanel" aria-hidden="true">
-      <section class="month-summary-section dashboard-month-summary">
+      <section id="dashboardMonthSummarySection" class="month-summary-section dashboard-month-summary" style="display:none">
         <h2>Итоги месяца <span id="dashboardMonthSummaryLabel" class="muted"></span></h2>
         <div id="dashboardMonthSummaryDisplay" class="month-summary-display"></div>
       </section>

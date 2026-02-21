@@ -257,9 +257,15 @@ function renderDiaryMonthSummary() {
 }
 
 function renderDashboardMonthSummary() {
+  const section = el('dashboardMonthSummarySection');
   el('dashboardMonthSummaryLabel').textContent = `(${monthNames[currentMonth - 1]} ${currentYear})`;
   loadMonthNote().then((summary) => {
-    el('dashboardMonthSummaryDisplay').textContent = summary ?? '';
+    if (!summary || !summary.trim()) {
+      section.style.display = 'none';
+    } else {
+      section.style.display = '';
+      el('dashboardMonthSummaryDisplay').textContent = summary;
+    }
   });
 }
 
@@ -683,6 +689,7 @@ function init() {
     if (e.target.matches('textarea')) autoResizeTextarea(e.target);
   });
   setTimeout(resizeAllTextareas, 100);
+  window.addEventListener('beforeunload', saveDraft);
   el('sessionForm').addEventListener('submit', submitSession);
 
   el('btnPause').addEventListener('click', togglePause);
@@ -760,6 +767,15 @@ function init() {
   });
 
   el('btnCancelEdit').addEventListener('click', cancelEdit);
+  el('btnClearForm').addEventListener('click', () => {
+    const form = el('sessionForm');
+    form.reset();
+    form.breaks.value = '0';
+    clearDraft();
+    hideFormValidation();
+    if (editingSessionId) cancelEdit();
+    saveDraft();
+  });
 
   el('fieldDate').addEventListener('input', () => { saveDraft(); updateValidationFromForm(); });
   el('fieldStartTime').addEventListener('input', () => { saveDraft(); updateValidationFromForm(); });
@@ -894,12 +910,8 @@ function aggregateByMonthDetailed(sessions) {
 const CHART_THEME = {
   grid: 'rgba(255, 255, 255, 0.08)',
   tick: '#c9d1d9',
-  line: '#E74C3C',
-  lineAbove: '#2ea043',
-  lineBelow: '#E74C3C',
-  fillFrom: 'rgba(231, 76, 60, 0.35)',
-  fillTo: 'rgba(231, 76, 60, 0)',
-  fillBelowThreshold: 'rgba(231, 76, 60, 0.25)',
+  line: '#5b9bd5',
+  fill: 'rgba(91, 155, 213, 0.15)',
   goalLine: 'rgba(210, 153, 34, 0.95)'
 };
 
@@ -926,6 +938,8 @@ function getChartOptions() {
   };
 }
 
+let _tooltipActiveIndex = -1;
+
 function showCustomTooltip(chart, tooltipMeta, event) {
   const tooltipEl = document.getElementById('chartTooltip');
   if (!tooltipEl || !tooltipMeta) return;
@@ -933,6 +947,7 @@ function showCustomTooltip(chart, tooltipMeta, event) {
   if (!elements.length) {
     tooltipEl.classList.add('hidden');
     tooltipEl.setAttribute('aria-hidden', 'true');
+    _tooltipActiveIndex = -1;
     return;
   }
   const dataIndex = elements[0].index;
@@ -940,27 +955,34 @@ function showCustomTooltip(chart, tooltipMeta, event) {
   if (!m) {
     tooltipEl.classList.add('hidden');
     tooltipEl.setAttribute('aria-hidden', 'true');
+    _tooltipActiveIndex = -1;
     return;
   }
-  const dev = m.deviation >= 0 ? `+${m.deviation}` : `${m.deviation}`;
-  const devClass = m.deviation >= 0 ? 'chart-tooltip-dev--pos' : 'chart-tooltip-dev--neg';
-  const badgeClass = m.belowGoal ? 'chart-tooltip-badge chart-tooltip-badge--below' : 'chart-tooltip-badge chart-tooltip-badge--ok';
-  const badgeText = m.belowGoal ? 'Ниже цели' : 'В норме';
-  tooltipEl.innerHTML = `
-    <div class="chart-tooltip-title">${escapeHtml(m.label)}</div>
-    <div class="chart-tooltip-body">
-      Часы: ${m.hours} ч<br>
-      Цель: ${m.goal} ч<br>
-      Отклонение: <span class="${devClass}">${dev} ч</span>
-    </div>
-    <span class="${badgeClass}">${badgeText}</span>
-  `;
+
   const rect = chart.canvas.getBoundingClientRect();
   const point = chart.getDatasetMeta(0).data[dataIndex];
   const x = point ? point.x : rect.width / 2;
   const y = point ? point.y : 0;
   tooltipEl.style.left = `${rect.left + x + 10}px`;
   tooltipEl.style.top = `${rect.top + y + 10}px`;
+
+  if (dataIndex !== _tooltipActiveIndex) {
+    _tooltipActiveIndex = dataIndex;
+    const dev = m.deviation >= 0 ? `+${m.deviation}` : `${m.deviation}`;
+    const devClass = m.deviation >= 0 ? 'chart-tooltip-dev--pos' : 'chart-tooltip-dev--neg';
+    const badgeClass = m.belowGoal ? 'chart-tooltip-badge chart-tooltip-badge--below' : 'chart-tooltip-badge chart-tooltip-badge--ok';
+    const badgeText = m.belowGoal ? 'Ниже цели' : 'В норме';
+    tooltipEl.innerHTML = `
+      <div class="chart-tooltip-title">${escapeHtml(m.label)}</div>
+      <div class="chart-tooltip-body">
+        Часы: ${m.hours} ч<br>
+        Цель: ${m.goal} ч<br>
+        Отклонение: <span class="${devClass}">${dev} ч</span>
+      </div>
+      <span class="${badgeClass}">${badgeText}</span>
+    `;
+  }
+
   tooltipEl.classList.remove('hidden');
   tooltipEl.setAttribute('aria-hidden', 'false');
 }
@@ -984,35 +1006,20 @@ function bindCustomTooltip(chart, tooltipMeta) {
   canvas.addEventListener('mouseleave', onLeave);
 }
 
-/** Линия часов: выше цели — зелёная, ниже — красная; заливка по сегментам (выше/ниже порога). */
-function createWeeksLineDataset(canvas, values, thresholdHours) {
-  const threshold = Number(thresholdHours) || 0;
-  const ctx = canvas.getContext('2d');
-  const h = Math.max(canvas.height || 0, 220);
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, CHART_THEME.fillFrom);
-  gradient.addColorStop(1, CHART_THEME.fillTo);
+function createLineDataset(values) {
   return {
     label: 'Часы',
     data: values,
-    borderColor: CHART_THEME.lineAbove,
-    backgroundColor: gradient,
+    borderColor: CHART_THEME.line,
+    backgroundColor: CHART_THEME.fill,
     borderWidth: 2,
-    fill: true,
+    fill: 'origin',
     tension: 0.3,
-    pointRadius: 5,
-    pointBackgroundColor: values.map((v) => (v >= threshold ? CHART_THEME.lineAbove : CHART_THEME.lineBelow)),
+    pointRadius: 4,
+    pointBackgroundColor: CHART_THEME.line,
     pointBorderColor: 'rgba(13, 17, 23, 0.8)',
     pointBorderWidth: 1,
-    pointHoverRadius: 6,
-    segment: {
-      borderColor: (ctx) => (ctx.p1.parsed.y >= threshold ? CHART_THEME.lineAbove : CHART_THEME.lineBelow),
-      backgroundColor: (ctx) => {
-        const y0 = ctx.p0.parsed.y;
-        const y1 = ctx.p1.parsed.y;
-        return (y0 < threshold && y1 < threshold) ? CHART_THEME.fillBelowThreshold : undefined;
-      }
-    }
+    pointHoverRadius: 6
   };
 }
 
@@ -1031,37 +1038,6 @@ function createThresholdDataset(thresholdHours, labelCount) {
   };
 }
 
-/** Линия часов по месяцам: выше цели — зелёная, ниже — красная; заливка по сегментам. */
-function createMonthsLineDataset(canvas, values, thresholdHours) {
-  const threshold = Number(thresholdHours) || 0;
-  const ctx = canvas.getContext('2d');
-  const h = Math.max(canvas.height || 0, 220);
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, CHART_THEME.fillFrom);
-  gradient.addColorStop(1, CHART_THEME.fillTo);
-  return {
-    label: 'Часы',
-    data: values,
-    borderColor: CHART_THEME.lineAbove,
-    backgroundColor: gradient,
-    borderWidth: 2,
-    fill: true,
-    tension: 0.3,
-    pointRadius: 5,
-    pointBackgroundColor: values.map((v) => (v >= threshold ? CHART_THEME.lineAbove : CHART_THEME.lineBelow)),
-    pointBorderColor: 'rgba(13, 17, 23, 0.8)',
-    pointBorderWidth: 1,
-    pointHoverRadius: 6,
-    segment: {
-      borderColor: (ctx) => (ctx.p1.parsed.y >= threshold ? CHART_THEME.lineAbove : CHART_THEME.lineBelow),
-      backgroundColor: (ctx) => {
-        const y0 = ctx.p0.parsed.y;
-        const y1 = ctx.p1.parsed.y;
-        return (y0 < threshold && y1 < threshold) ? CHART_THEME.fillBelowThreshold : undefined;
-      }
-    }
-  };
-}
 
 function destroyChart(chart) {
   if (chart) chart.destroy();
@@ -1075,7 +1051,7 @@ async function renderDashboard() {
   const currentWeekMonday = getWeekMonday(now.toISOString().slice(0, 10));
   const sortedWeeksList = [];
   const d = new Date(currentWeekMonday + 'T12:00:00');
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 8; i++) {
     sortedWeeksList.push(d.toISOString().slice(0, 10));
     d.setDate(d.getDate() - 7);
   }
@@ -1105,7 +1081,7 @@ async function renderDashboard() {
   const sortedMonths = Object.keys(byMonth).sort();
   const weekLabels = sortedWeeks.map(formatWeekLabel);
 
-  el('dashboardWeeksLabel').textContent = '(последние 12 недель)';
+  el('dashboardWeeksLabel').textContent = '(последние 8 недель)';
   el('dashboardMonthsLabel').textContent = '(последние 12 месяцев)';
 
   const hours = (min) => Math.round((min / 60) * 10) / 10;
@@ -1162,7 +1138,7 @@ async function renderDashboard() {
     data: {
       labels: weekLabels,
       datasets: [
-        createWeeksLineDataset(canvasWeeks, weeksValues, thresholdHours),
+        createLineDataset(weeksValues),
         createThresholdDataset(thresholdHours, weekLabels.length)
       ]
     },
@@ -1193,7 +1169,7 @@ async function renderDashboard() {
     data: {
       labels: monthsLabels,
       datasets: [
-        createMonthsLineDataset(canvasMonths, monthsValues, thresholdMonthHours),
+        createLineDataset(monthsValues),
         createThresholdDataset(thresholdMonthHours, monthsLabels.length)
       ]
     },
