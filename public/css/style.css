@@ -1,4 +1,7 @@
-/* GitHub-style dark theme */
+/* ==========================================================================
+   CSS Variables
+   ========================================================================== */
+
 :root {
   --bg: #0d1117;
   --bg-card: #161b22;
@@ -9,11 +12,15 @@
   --border: #30363d;
   --input-bg: #0d1117;
   --radius: 6px;
+  --error: #e57373;
+  --error-bright: #f85149;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ==========================================================================
+   Reset & Base
+   ========================================================================== */
+
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -24,41 +31,24 @@ body {
   font-size: 14px;
 }
 
+.hidden { display: none; }
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
 .app {
   max-width: 1000px;
   margin: 0 auto;
   padding: 1.5rem;
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-}
+.main { display: flex; flex-direction: column; gap: 1rem; }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
+/* ==========================================================================
+   Global Inputs & Textareas
+   ========================================================================== */
 
-.header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.tabs {
-  display: flex;
-  gap: 0.25rem;
-}
-
-/* Все поля ввода: без горизонтального скролла, перенос длинных слов */
 .app textarea,
 .app input[type="text"],
 .app input:not([type]) {
@@ -66,6 +56,7 @@ body {
   word-break: break-word;
   box-sizing: border-box;
 }
+
 .app textarea {
   white-space: pre-wrap;
   overflow-x: hidden;
@@ -74,7 +65,6 @@ body {
   min-height: 2.5em;
 }
 
-/* Компонент: поле ввода (как перерывы в Новая сессия) */
 .input-field {
   background: var(--input-bg);
   border: 1px solid var(--border);
@@ -102,58 +92,33 @@ body {
   appearance: none;
   margin: 0;
 }
-.setting-row .input-field {
-  width: 5rem;
+.setting-row .input-field { width: 5rem; }
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
 }
 
-.tab {
-  padding: 0.4rem 0.75rem;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 14px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
 }
 
-.tab:hover {
-  color: var(--text);
-}
-
-.tab.active {
-  background: var(--bg-card);
-  color: var(--text);
-  border-color: var(--border);
-}
-
-.tab.active:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--text-muted);
-}
-
-/* Кнопки-таблетки: стрелки месяца/недели, Текущая неделя/месяц */
-.pill-btn {
-  padding: 0.4rem 0.75rem;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-}
-.pill-btn:hover {
-  color: var(--text);
-  background: var(--bg-card);
-}
-.pill-btn.active {
-  background: var(--bg-card);
-  color: var(--text);
-  border-color: var(--border);
-}
-.sessions-view-toggle .pill-btn.active:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--text-muted);
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .header-right {
@@ -168,54 +133,87 @@ body {
   font-size: 0.95rem;
   color: var(--text-muted);
 }
-.header-total-all strong {
-  color: var(--accent);
+.header-total-all strong { color: var(--accent); }
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+
+.tabs { display: flex; gap: 0.25rem; }
+
+.tab {
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  background: var(--bg-card);
+  color: var(--text);
+  border-color: var(--border);
+}
+.tab.active:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-muted);
 }
 
-.month-summary {
+/* ==========================================================================
+   Pill Buttons (month/week arrows, toggles)
+   ========================================================================== */
+
+.pill-btn {
+  padding: 0.4rem 0.75rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
+.pill-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-muted);
+}
+.pill-btn.active {
+  background: var(--bg-card);
+  color: var(--text);
+  border-color: var(--border);
+}
+.pill-btn.active:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Month & Week Summary in Header
+   ========================================================================== */
+
 .month-summary .label { color: var(--text-muted); margin-right: 0.5rem; }
 .month-summary span:last-child { font-weight: 600; color: var(--accent); }
 
-.month-picker {
-  display: flex;
-  align-items: center;
-}
+/* Month picker */
+.month-picker { display: flex; align-items: center; }
 .month-picker .pill-btn {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.month-picker .pill-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--text-muted);
+  width: 2rem; height: 2rem; padding: 0; font-size: 1rem;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 #currentMonthLabel {
   min-width: 140px;
   text-align: center;
   font-weight: 500;
 }
-.week-picker {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+
+/* Week picker */
+.week-picker { display: flex; align-items: center; gap: 0.5rem; }
 .week-picker .pill-btn {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.week-picker .pill-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--text-muted);
+  width: 2rem; height: 2rem; padding: 0; font-size: 1rem;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 #currentWeekLabel {
   min-width: 120px;
@@ -234,17 +232,16 @@ body {
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
 }
-
-.week-picker-warning {
-  color: #f85149;
-}
+.week-picker-warning { color: var(--error-bright); }
 .week-picker-warning #currentWeekLabel,
 .week-picker-warning .week-picker .pill-btn {
-  color: #f85149;
+  color: var(--error-bright);
   border-color: rgba(248, 81, 73, 0.5);
 }
 
-.main { display: flex; flex-direction: column; gap: 1rem; }
+/* ==========================================================================
+   Session Form
+   ========================================================================== */
 
 .form-section {
   position: relative;
@@ -270,14 +267,8 @@ body {
   visibility: hidden;
   transition: opacity 0.25s ease, visibility 0.25s ease, color 0.15s ease, background 0.15s ease;
 }
-.form-section:hover .btn-clear-form {
-  opacity: 1;
-  visibility: visible;
-}
-.btn-clear-form:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
-}
+.form-section:hover .btn-clear-form { opacity: 1; visibility: visible; }
+.btn-clear-form:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
 
 #sessionForm .row-fields {
   display: flex;
@@ -286,27 +277,17 @@ body {
   gap: 1rem;
   margin-bottom: 1rem;
 }
-#sessionForm .row-fields .field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-#sessionForm .row-fields .field label {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-#sessionForm .breaks-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+#sessionForm .row-fields .field { display: flex; flex-direction: column; gap: 0.25rem; }
+#sessionForm .row-fields .field label { color: var(--text-muted); font-size: 0.8rem; }
+#sessionForm .breaks-row { display: flex; align-items: center; gap: 0.5rem; }
 #sessionForm .field-breaks input { width: 5rem; }
+
 #sessionForm .btn-pause {
   background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 0.4rem 0.6rem;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.85rem;
   white-space: nowrap;
@@ -317,21 +298,8 @@ body {
   border-color: #8b5353;
   color: #e0a0a0;
 }
-.pause-elapsed {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-.pause-elapsed.hidden { display: none; }
-#sessionForm .row-notes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
-}
-#sessionForm .row-notes label {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
+.pause-elapsed { font-size: 0.8rem; color: var(--text-muted); }
+
 #sessionForm input,
 #sessionForm textarea {
   background: var(--input-bg);
@@ -352,7 +320,7 @@ body {
   outline: none;
   border-color: var(--accent);
 }
-/* Свои светлые иконки вместо дефолтных (видны на тёмном фоне) */
+
 #sessionForm input[type="date"],
 #sessionForm input[type="time"],
 #sessionForm input[type="number"] {
@@ -376,13 +344,10 @@ body {
   right: 0.5rem;
   width: 1.5rem;
   height: 100%;
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   opacity: 0;
   cursor: pointer;
 }
-
-/* Поле перерывов: скрыть дефолтные стрелки, свои кнопки в HTML */
 #sessionForm input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -394,21 +359,20 @@ body {
   margin: 0;
 }
 #sessionForm textarea { width: 100%; resize: vertical; min-height: 60px; }
+
+#sessionForm .row-notes { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1rem; }
+#sessionForm .row-notes label { color: var(--text-muted); font-size: 0.8rem; }
 #sessionForm .row-actions { margin-top: 0; display: flex; gap: 0.5rem; align-items: center; }
-.form-validation {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-}
-.form-validation.error { color: #e57373; }
-.form-validation.hidden { display: none; }
+
+.form-validation { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+.form-validation.error { color: var(--error); }
+
 #sessionForm .btn-cancel {
   background: transparent;
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
 #sessionForm .btn-cancel:hover { background: var(--input-bg); }
-#sessionForm .btn-cancel.hidden { display: none; }
 #sessionForm button[type="submit"] {
   background: var(--accent-dim);
   color: #fff;
@@ -419,6 +383,10 @@ body {
   font-size: 14px;
 }
 #sessionForm button[type="submit"]:hover { background: var(--accent); }
+
+/* ==========================================================================
+   Sessions Table
+   ========================================================================== */
 
 .sessions-header {
   display: flex;
@@ -435,18 +403,8 @@ body {
   gap: 1rem;
   flex-wrap: wrap;
 }
-.sessions-view-toggle {
-  display: flex;
-  gap: 0.25rem;
-}
-.sessions-view-toggle .pill-btn {
-  padding: 0.35rem 0.6rem;
-  font-size: 13px;
-}
-.sessions-view-toggle .pill-btn.active:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--text-muted);
-}
+.sessions-view-toggle { display: flex; gap: 0.25rem; }
+.sessions-view-toggle .pill-btn { padding: 0.35rem 0.6rem; font-size: 13px; }
 
 .sessions-table {
   width: 100%;
@@ -459,21 +417,11 @@ body {
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
-.sessions-table th {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-.sessions-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.sessions-table th { color: var(--text-muted); font-weight: 500; }
+.sessions-table tbody tr { cursor: pointer; }
+.sessions-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
 .sessions-table .notes { max-width: 280px; white-space: pre-wrap; word-break: break-word; }
 .sessions-table .studied { font-weight: 500; color: var(--accent); }
-.sessions-table .btn-delete {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  font-size: 1rem;
-}
 .sessions-table .th-actions { width: 5rem; text-align: right; }
 .sessions-table .btn-edit,
 .sessions-table .btn-delete {
@@ -487,30 +435,15 @@ body {
   min-width: 2rem;
 }
 .sessions-table .btn-edit:hover { color: var(--accent); }
-.sessions-table .btn-delete:hover { color: #e57373; }
+.sessions-table .btn-delete:hover { color: var(--error); }
 .sessions-table .row-actions-cell { white-space: nowrap; }
-.sessions-table tbody tr { cursor: pointer; }
-.sessions-table tbody tr:hover { background: rgba(255,255,255,0.03); }
 
-.empty-state {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  margin: 1rem 0 0;
-}
-.empty-state.hidden { display: none; }
+.empty-state { color: var(--text-muted); font-size: 0.9rem; margin: 1rem 0 0; }
 
-/* Итоги месяца: форма в Дневнике, вывод на Дашборде */
-.month-summary-section.dashboard-month-summary {
-  margin-bottom: 1.5rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-.month-summary-section.dashboard-month-summary h2 {
-  color: #fff;
-}
+/* ==========================================================================
+   Month Summary (Diary & Dashboard)
+   ========================================================================== */
+
 .month-summary-section h2 { margin: 0 0 0.5rem; font-size: 16px; font-weight: 600; }
 .month-summary-section .muted { color: var(--text-muted); font-weight: 400; font-size: 14px; }
 .month-summary-section textarea {
@@ -533,6 +466,17 @@ body {
   outline: none;
   border-color: var(--accent);
 }
+
+.month-summary-section.dashboard-month-summary {
+  margin-bottom: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.month-summary-section.dashboard-month-summary h2 { color: #fff; }
+
 .month-summary-display {
   min-height: 4rem;
   padding: 0.6rem;
@@ -549,7 +493,10 @@ body {
   color: var(--text-muted);
 }
 
-/* Цели на эту неделю */
+/* ==========================================================================
+   Week Goals
+   ========================================================================== */
+
 .current-week-goals-section {
   margin-bottom: 1.5rem;
   padding: 1rem;
@@ -560,7 +507,7 @@ body {
 .current-week-goals-section h2 { margin: 0 0 0.75rem; font-size: 16px; font-weight: 600; }
 .goals-list { display: flex; flex-direction: column; gap: 0.35rem; }
 .goals-empty { color: var(--text-muted); font-size: 14px; margin: 0; }
-.goals-empty.hidden { display: none; }
+
 .goal-item {
   display: flex;
   align-items: center;
@@ -569,38 +516,36 @@ body {
 }
 .goal-item input[type="checkbox"] {
   flex-shrink: 0;
-  width: 1.1em;
-  height: 1.1em;
+  width: 1.1em; height: 1.1em;
   cursor: pointer;
   accent-color: var(--text-muted);
 }
-.goal-item input[type="checkbox"]:not(:checked) {
-  opacity: 0.6;
-}
-.goal-item input[type="checkbox"]:checked {
-  accent-color: var(--accent);
-  opacity: 1;
-}
-.goal-item .goal-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-}
+.goal-item input[type="checkbox"]:not(:checked) { opacity: 0.6; }
+.goal-item input[type="checkbox"]:checked { accent-color: var(--accent); opacity: 1; }
+.goal-item .goal-text { flex: 0 1 auto; min-width: 0; font-size: 14px; }
 .goal-item .goal-text.done { text-decoration: line-through; color: var(--text-muted); }
-.goal-item .goal-text.not_done { text-decoration: line-through; color: #f85149; }
-.goal-item .btn-not-done {
+.goal-item .goal-text.not_done { text-decoration: line-through; color: var(--error-bright); }
+.goal-item .btn-goal-dismiss {
   flex-shrink: 0;
-  padding: 0.2rem 0.4rem;
-  font-size: 12px;
-  background: transparent;
-  border: 1px solid var(--border);
+  padding: 3px 5px;
+  font-size: 13px;
+  line-height: 1;
+  background: none;
+  border: none;
   color: var(--text-muted);
   border-radius: var(--radius);
   cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease, color 0.15s ease, background 0.15s ease;
 }
-.goal-item .btn-not-done:hover { color: #f85149; border-color: #f85149; }
+.goal-item:hover .btn-goal-dismiss { opacity: 1; visibility: visible; }
+.goal-item .btn-goal-dismiss:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
 
-/* Итоги и цели по неделям */
+/* ==========================================================================
+   Week Notes
+   ========================================================================== */
+
 .week-notes-section { margin-top: 2rem; }
 .week-notes-section h2 { margin: 0 0 1rem; font-size: 16px; font-weight: 600; }
 .week-note-card {
@@ -610,11 +555,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
-.week-note-card h3 {
-  margin: 0 0 0.75rem;
-  font-size: 14px;
-  font-weight: 600;
-}
+.week-note-card h3 { margin: 0 0 0.75rem; font-size: 14px; font-weight: 600; }
 .week-note-card .week-summary-label,
 .week-note-card .week-goals-label {
   display: block;
@@ -642,57 +583,33 @@ body {
   outline: none;
   border-color: var(--accent);
 }
-.week-note-card .week-goals-editor {
-  margin-top: 0.25rem;
-}
-.week-goals-editor textarea {
-  min-height: 60px;
-  font-family: inherit;
-}
+.week-note-card .week-goals-editor { margin-top: 0.25rem; }
+.week-goals-editor textarea { min-height: 60px; font-family: inherit; }
 
-/* Переключение видов */
-.view.view--hidden {
-  display: none;
-}
+/* ==========================================================================
+   View Switching
+   ========================================================================== */
 
-/* Дашборд (GitHub-style) */
-.dashboard-total-section {
-  margin-bottom: 1rem;
-}
-.dashboard-total {
-  margin: 0;
-  font-size: 15px;
-  color: var(--text-muted);
-}
+.view.view--hidden { display: none; }
+
+/* ==========================================================================
+   Settings
+   ========================================================================== */
+
+.settings-section { max-width: 420px; }
+.settings-section h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+.settings-fields { display: flex; flex-direction: column; gap: 1rem; }
+.setting-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.setting-row label { min-width: 180px; color: var(--text); }
+.settings-hint { margin: 1rem 0 0; font-size: 13px; color: var(--text-muted); }
+
+/* ==========================================================================
+   Dashboard
+   ========================================================================== */
+
+.dashboard-total-section { margin-bottom: 1rem; }
+.dashboard-total { margin: 0; font-size: 15px; color: var(--text-muted); }
 .dashboard-total strong { color: var(--text); }
-
-.settings-section {
-  max-width: 420px;
-}
-.settings-section h2 {
-  margin: 0 0 1rem;
-  font-size: 1.1rem;
-}
-.settings-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.setting-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.setting-row label {
-  min-width: 180px;
-  color: var(--text);
-}
-.settings-hint {
-  margin: 1rem 0 0;
-  font-size: 13px;
-  color: var(--text-muted);
-}
 
 .dashboard-section {
   margin-bottom: 1.5rem;
@@ -702,19 +619,8 @@ body {
   padding: 1.25rem 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-
-.dashboard-section h2 {
-  margin: 0 0 1rem;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.dashboard-period {
-  color: var(--text-muted);
-  font-weight: 400;
-  font-size: 12px;
-}
+.dashboard-section h2 { margin: 0 0 1rem; font-size: 16px; font-weight: 600; color: #fff; }
+.dashboard-period { color: var(--text-muted); font-weight: 400; font-size: 12px; }
 
 .chart-wrap {
   background: transparent;
@@ -724,12 +630,12 @@ body {
   height: 260px;
   position: relative;
 }
+.chart-wrap canvas { max-height: 240px; }
 
-.chart-wrap canvas {
-  max-height: 240px;
-}
+/* ==========================================================================
+   Chart Tooltip
+   ========================================================================== */
 
-/* Кастомный тултип графиков: название периода, часы, цель, отклонение, плашка */
 .chart-tooltip {
   position: fixed;
   z-index: 1001;
@@ -745,28 +651,11 @@ body {
   visibility: visible;
   transition: opacity 0.2s ease, visibility 0.2s ease, left 0.15s ease, top 0.15s ease;
 }
-.chart-tooltip.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-.chart-tooltip-title {
-  color: #fff;
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-.chart-tooltip-body {
-  color: #c9d1d9;
-  line-height: 1.6;
-}
-.chart-tooltip-dev--pos {
-  color: #2ea043;
-  font-weight: 500;
-}
-.chart-tooltip-dev--neg {
-  color: #f85149;
-  font-weight: 500;
-}
+.chart-tooltip.hidden { opacity: 0; visibility: hidden; }
+.chart-tooltip-title { color: #fff; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.chart-tooltip-body { color: #c9d1d9; line-height: 1.6; }
+.chart-tooltip-dev--pos { color: var(--accent); font-weight: 500; }
+.chart-tooltip-dev--neg { color: var(--error-bright); font-weight: 500; }
 .chart-tooltip-badge {
   display: inline-block;
   margin-top: 10px;
@@ -776,14 +665,13 @@ body {
   font-weight: 500;
   color: #fff;
 }
-.chart-tooltip-badge--below {
-  background: #e74c3c;
-}
-.chart-tooltip-badge--ok {
-  background: #2ea043;
-}
+.chart-tooltip-badge--below { background: #e74c3c; }
+.chart-tooltip-badge--ok { background: var(--accent); }
 
-/* Toast / Snackbar */
+/* ==========================================================================
+   Toast / Snackbar
+   ========================================================================== */
+
 .toast {
   position: fixed;
   bottom: 1.5rem;
@@ -796,10 +684,9 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   z-index: 1000;
 }
-.toast.hidden { display: none; }
 .toast-undo {
   background: transparent;
   border: none;
@@ -808,5 +695,5 @@ body {
   font-size: 0.9rem;
   text-decoration: underline;
 }
-.toast-undo.hidden { display: none; }
+.toast.hidden { display: none; }
 .toast-undo:hover { opacity: 0.9; }
