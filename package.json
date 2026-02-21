@@ -1,0 +1,19 @@
+{
+  "name": "devlog",
+  "version": "1.0.0",
+  "description": "Study log — веб-дневник учёбы с бэкендом",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "clear-db": "node clear-db.js",
+    "import-excel": "node import-from-excel.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

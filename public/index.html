@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevLog — дневник учёбы</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <h1>Дневник учебы</h1>
+        <nav class="tabs" role="tablist">
+          <button type="button" class="tab active" data-view="diary" role="tab" aria-selected="true">Дневник</button>
+          <button type="button" class="tab" data-view="dashboard" role="tab" aria-selected="false">Дашборд</button>
+          <button type="button" class="tab" data-view="settings" role="tab" aria-selected="false">Настройки</button>
+        </nav>
+      </div>
+      <div class="header-right">
+        <div id="headerDiaryInfo">
+          <div class="month-summary">
+            <span class="label" id="headerTotalLabel">Неделя:</span>
+            <span id="monthTotal">0 ч 0 мин</span>
+          </div>
+        </div>
+        <div id="headerTotalAll" class="header-total-all" style="display: none;">Всего за всё время: <strong id="dashboardTotalStudied">—</strong></div>
+      </div>
+    </header>
+
+    <main id="viewDiary" class="view main" role="tabpanel">
+      <section class="current-week-goals-section">
+        <h2>Цели на эту неделю</h2>
+        <div id="currentWeekGoalsList" class="goals-list"></div>
+        <p id="currentWeekGoalsEmpty" class="goals-empty hidden">Цели на эту неделю не заданы. Задай их в блоке «Итоги и цели по неделям» ниже.</p>
+      </section>
+      <section class="form-section">
+        <h2 id="formTitle">Новая сессия</h2>
+        <form id="sessionForm">
+          <div class="row-fields">
+            <div class="field">
+              <label for="fieldDate">Дата</label>
+              <input type="date" name="date" id="fieldDate" required>
+            </div>
+            <div class="field">
+              <label for="fieldStartTime">Начало</label>
+              <input type="time" name="startTime" id="fieldStartTime" required>
+            </div>
+            <div class="field">
+              <label for="fieldEndTime">Конец</label>
+              <input type="time" name="endTime" id="fieldEndTime" required>
+            </div>
+            <div class="field field-breaks">
+              <label for="fieldBreaks">Перерывы (мин)</label>
+              <div class="breaks-row">
+                <input type="number" name="breaks" id="fieldBreaks" min="0" value="0">
+                <button type="button" id="btnPause" class="btn-pause">Начать перерыв</button>
+                <span id="pauseElapsed" class="pause-elapsed hidden"></span>
+              </div>
+            </div>
+          </div>
+          <div id="formValidation" class="form-validation hidden" aria-live="polite"></div>
+          <div class="row-notes">
+            <label for="fieldNotes">Что делал</label>
+            <textarea name="notes" id="fieldNotes" rows="3" placeholder="Чем занимался..."></textarea>
+          </div>
+          <div class="row-actions" id="formSubmitRow">
+            <button type="submit" id="btnSubmit">Добавить сессию</button>
+            <button type="button" id="btnCancelEdit" class="btn-cancel hidden">Отмена</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="sessions-section">
+        <div class="sessions-header">
+          <h2>Сессии</h2>
+          <div class="sessions-period-pickers">
+            <div class="month-picker">
+              <button type="button" class="pill-btn" id="prevMonth" aria-label="Предыдущий месяц">←</button>
+              <span id="currentMonthLabel">Январь 2026</span>
+              <button type="button" class="pill-btn" id="nextMonth" aria-label="Следующий месяц">→</button>
+            </div>
+            <div class="week-picker">
+              <button type="button" class="pill-btn" id="prevWeek" aria-label="Предыдущая неделя">←</button>
+              <span id="currentWeekLabel">Неделя</span>
+              <button type="button" class="pill-btn" id="nextWeek" aria-label="Следующая неделя">→</button>
+            </div>
+          </div>
+          <div class="sessions-view-toggle" role="tablist">
+            <button type="button" class="pill-btn toggle-btn active" data-range="week" aria-selected="true">Текущая неделя</button>
+            <button type="button" class="pill-btn toggle-btn" data-range="month" aria-selected="false">Текущий месяц</button>
+          </div>
+        </div>
+        <table class="sessions-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Время сессии</th>
+              <th>Перерывы</th>
+              <th>Занимался</th>
+              <th>Что делал</th>
+              <th class="th-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="sessionsBody">
+          </tbody>
+        </table>
+        <p id="emptyState" class="empty-state">Нет сессий за выбранный период.</p>
+      </section>
+      <section class="week-notes-section">
+        <h2>Итоги и цели выбранной недели</h2>
+        <div id="weekNotesList"></div>
+      </section>
+      <section class="month-summary-section diary-month-summary">
+        <h2>Итоги месяца <span id="diaryMonthSummaryLabel" class="muted"></span></h2>
+        <textarea id="diaryMonthSummaryText" rows="3" placeholder="Заполняй в конце месяца: что успел, какие модули, итоги..."></textarea>
+      </section>
+    </main>
+
+    <main id="viewDashboard" class="view main view--hidden" role="tabpanel" aria-hidden="true">
+      <section class="month-summary-section dashboard-month-summary">
+        <h2>Итоги месяца <span id="dashboardMonthSummaryLabel" class="muted"></span></h2>
+        <div id="dashboardMonthSummaryDisplay" class="month-summary-display"></div>
+      </section>
+      <section class="dashboard-section">
+        <h2>Часы по неделям <span id="dashboardWeeksLabel" class="dashboard-period"></span></h2>
+        <div class="chart-wrap">
+          <canvas id="chartWeeks" aria-label="График часов по неделям"></canvas>
+        </div>
+      </section>
+      <section class="dashboard-section">
+        <h2>Часы по месяцам <span id="dashboardMonthsLabel" class="dashboard-period"></span></h2>
+        <div class="chart-wrap">
+          <canvas id="chartMonths" aria-label="График часов по месяцам"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <main id="viewSettings" class="view main view--hidden" role="tabpanel" aria-hidden="true">
+      <section class="settings-section">
+        <h2>Пороги на графиках</h2>
+        <div class="settings-fields">
+          <div class="setting-row">
+            <label for="weekThreshold">Минимум часов в неделю</label>
+            <input type="number" class="input-field" id="weekThreshold" min="0" max="100" value="10" step="1">
+          </div>
+          <div class="setting-row">
+            <label for="monthThreshold">Минимум часов в месяц</label>
+            <input type="number" class="input-field" id="monthThreshold" min="0" max="500" value="40" step="1">
+          </div>
+        </div>
+        <p class="settings-hint">Значения используются для линий порога и подсветки на графиках «Часы по неделям» и «Часы по месяцам».</p>
+      </section>
+    </main>
+  </div>
+  <div id="chartTooltip" class="chart-tooltip hidden" role="tooltip" aria-hidden="true"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">
+    <span id="toastMessage"></span>
+    <button type="button" id="toastUndo" class="toast-undo hidden">Отменить</button>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/js/app.js" type="module"></script>
+</body>
+</html>
