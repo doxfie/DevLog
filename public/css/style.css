@@ -438,11 +438,12 @@ body {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.6rem;
   font-size: 1.25rem;
   line-height: 1;
-  min-width: 2rem;
+  min-width: 2.25rem;
 }
+.sessions-table .btn-delete { font-size: 1.4rem; }
 .sessions-table .btn-edit:hover { color: var(--accent); }
 .sessions-table .btn-delete:hover { color: var(--error); }
 .sessions-table .row-actions-cell { white-space: nowrap; }

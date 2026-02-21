@@ -126,9 +126,9 @@ function renderDashboardMonthSummary() {
   el('dashboardMonthSummaryLabel').textContent = `(${monthNames[currentMonth - 1]} ${currentYear})`;
   loadMonthNote(getMonthKey(currentYear, currentMonth)).then((summary) => {
     if (!summary || !summary.trim()) {
-      section.style.display = 'none';
+      section.classList.add('hidden');
     } else {
-      section.style.display = '';
+      section.classList.remove('hidden');
       el('dashboardMonthSummaryDisplay').textContent = summary;
     }
   });
@@ -422,20 +422,20 @@ function showView(viewId) {
     diary.classList.remove('view--hidden');
     diary.setAttribute('aria-hidden', 'false');
     el('headerDiaryInfo').style.display = '';
-    el('headerTotalAll').style.display = 'none';
+    el('headerTotalAll').classList.add('hidden');
     renderDiaryMonthSummary();
   } else if (viewId === 'dashboard') {
     dashboard.classList.remove('view--hidden');
     dashboard.setAttribute('aria-hidden', 'false');
     el('headerDiaryInfo').style.display = 'none';
-    el('headerTotalAll').style.display = '';
+    el('headerTotalAll').classList.remove('hidden');
     renderDashboardMonthSummary();
     renderDashboard();
   } else {
     settings.classList.remove('view--hidden');
     settings.setAttribute('aria-hidden', 'false');
     el('headerDiaryInfo').style.display = 'none';
-    el('headerTotalAll').style.display = 'none';
+    el('headerTotalAll').classList.add('hidden');
     loadSettingsFromStorage();
   }
 }
