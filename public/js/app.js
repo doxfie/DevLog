@@ -110,14 +110,41 @@ async function refreshSessions() {
   renderSessions(list);
   renderCurrentWeekGoals();
   renderCurrentWeekSummary();
+  renderCurrentMonthSummaryInCard();
 }
 
 // ——— Итоги месяца ———
 
-function renderDiaryMonthSummary() {
-  el('diaryMonthSummaryLabel').textContent = `(${monthNames[currentMonth - 1]} ${currentYear})`;
-  loadMonthNote(getMonthKey(currentYear, currentMonth)).then((summary) => {
-    el('diaryMonthSummaryText').value = summary ?? '';
+function renderCurrentMonthSummaryInCard() {
+  const monthKey = getMonthKey(currentYear, currentMonth);
+  const textEl = el('currentMonthSummaryText');
+  const btnRow = el('btnToggleMonthSummary');
+  const btnSection = el('btnToggleMonthSummaryInSection');
+  const wrapEl = el('monthSummaryInputWrap');
+  const monthSection = el('goalsSummaryMonthSection');
+  const monthInline = el('goalsSummaryMonthInline');
+  loadMonthNote(monthKey).then((summary) => {
+    const hasSummary = summary && summary.trim().length > 0;
+    if (hasSummary) {
+      textEl.textContent = stripSummaryDashes(summary);
+      textEl.classList.remove('hidden');
+      btnSection.textContent = ICON_PENCIL;
+      btnSection.setAttribute('aria-label', 'Изменить итоги месяца');
+      btnSection.title = 'Изменить итоги месяца';
+      monthSection.classList.remove('hidden');
+      monthInline.classList.add('hidden');
+      monthInline.classList.remove('visible-on-card-hover');
+    } else {
+      textEl.classList.add('hidden');
+      textEl.textContent = '';
+      btnRow.innerHTML = SVG_PLUS;
+      btnRow.setAttribute('aria-label', 'Итоги месяца');
+      btnRow.title = 'Итоги месяца';
+      monthSection.classList.add('hidden');
+      monthInline.classList.remove('hidden');
+      monthInline.classList.add('visible-on-card-hover');
+    }
+    wrapEl.classList.add('hidden');
   });
 }
 
@@ -221,6 +248,9 @@ function submitNewGoal() {
   });
 }
 
+const ICON_PENCIL = '\u270E'; // ✎
+const SVG_PLUS = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
 /** При отображении убираем ведущие дефисы с начала строк (для старых данных из экселя). */
 function stripSummaryDashes(text) {
   if (!text || typeof text !== 'string') return '';
@@ -229,7 +259,6 @@ function stripSummaryDashes(text) {
 
 function renderCurrentWeekSummary() {
   const weekKey = selectedWeekKey || getCurrentWeekKey();
-  const viewEl = el('currentWeekSummaryView');
   const textEl = el('currentWeekSummaryText');
   const btnEl = el('btnToggleWeekSummary');
   const wrapEl = el('goalSummaryInputWrap');
@@ -238,13 +267,15 @@ function renderCurrentWeekSummary() {
     if (hasSummary) {
       textEl.textContent = stripSummaryDashes(summary);
       textEl.classList.remove('hidden');
-      btnEl.textContent = 'Изменить';
+      btnEl.textContent = ICON_PENCIL;
       btnEl.setAttribute('aria-label', 'Изменить итоги недели');
+      btnEl.title = 'Изменить итоги недели';
     } else {
       textEl.classList.add('hidden');
       textEl.textContent = '';
-      btnEl.textContent = '+ Итоги недели';
+      btnEl.innerHTML = SVG_PLUS;
       btnEl.setAttribute('aria-label', 'Итоги недели');
+      btnEl.title = 'Итоги недели';
     }
     wrapEl.classList.add('hidden');
   });
@@ -252,12 +283,12 @@ function renderCurrentWeekSummary() {
 
 function showSummaryInput() {
   const weekKey = selectedWeekKey || getCurrentWeekKey();
-  const viewEl = el('currentWeekSummaryView');
+  const weekBlock = el('goalsSummaryWeekBlock');
   const wrapEl = el('goalSummaryInputWrap');
   const inputEl = el('goalSummaryInput');
   loadWeekNote(weekKey).then(({ summary }) => {
     inputEl.value = summary || '';
-    viewEl.classList.add('hidden');
+    weekBlock.classList.add('hidden');
     wrapEl.classList.remove('hidden');
     inputEl.focus();
     autoResizeTextarea(inputEl);
@@ -265,8 +296,27 @@ function showSummaryInput() {
 }
 
 function hideSummaryInput() {
-  el('currentWeekSummaryView').classList.remove('hidden');
+  el('goalsSummaryWeekBlock').classList.remove('hidden');
   el('goalSummaryInputWrap').classList.add('hidden');
+}
+
+function showMonthSummaryInput() {
+  const monthKey = getMonthKey(currentYear, currentMonth);
+  const monthSection = el('goalsSummaryMonthSection');
+  const wrapEl = el('monthSummaryInputWrap');
+  const inputEl = el('monthSummaryInput');
+  loadMonthNote(monthKey).then((summary) => {
+    inputEl.value = summary ?? '';
+    monthSection.classList.add('hidden');
+    wrapEl.classList.remove('hidden');
+    inputEl.focus();
+    autoResizeTextarea(inputEl);
+  });
+}
+
+function hideMonthSummaryInput() {
+  el('goalsSummaryMonthSection').classList.remove('hidden');
+  el('monthSummaryInputWrap').classList.add('hidden');
 }
 
 function submitWeekSummary() {
@@ -276,6 +326,16 @@ function submitWeekSummary() {
   saveWeekNote(weekKey, summary, undefined).then(() => {
     hideSummaryInput();
     renderCurrentWeekSummary();
+  });
+}
+
+function submitMonthSummary() {
+  const inputEl = el('monthSummaryInput');
+  const monthKey = getMonthKey(currentYear, currentMonth);
+  const summary = inputEl.value.trim();
+  saveMonthNote(monthKey, summary).then(() => {
+    hideMonthSummaryInput();
+    renderCurrentMonthSummaryInCard();
   });
 }
 
@@ -477,7 +537,7 @@ function showView(viewId) {
     diary.setAttribute('aria-hidden', 'false');
     el('headerDiaryInfo').style.display = '';
     el('headerTotalAll').classList.add('hidden');
-    renderDiaryMonthSummary();
+    renderCurrentMonthSummaryInCard();
   } else if (viewId === 'dashboard') {
     dashboard.classList.remove('view--hidden');
     dashboard.setAttribute('aria-hidden', 'false');
@@ -503,7 +563,7 @@ function init() {
   restorePauseState();
   renderMonthLabel();
   refreshSessions();
-  renderDiaryMonthSummary();
+  renderCurrentMonthSummaryInCard();
   setupAutoFillFields();
 
   document.body.addEventListener('input', (e) => {
@@ -523,6 +583,9 @@ function init() {
 
   el('btnToggleWeekSummary').addEventListener('click', showSummaryInput);
   el('goalSummaryInput').addEventListener('blur', submitWeekSummary);
+  el('btnToggleMonthSummary').addEventListener('click', showMonthSummaryInput);
+  el('btnToggleMonthSummaryInSection').addEventListener('click', showMonthSummaryInput);
+  el('monthSummaryInput').addEventListener('blur', submitMonthSummary);
 
   el('prevMonth').addEventListener('click', () => {
     currentMonth--;
@@ -530,7 +593,7 @@ function init() {
     renderMonthLabel();
     clampSelectedWeekToMonth();
     refreshSessions();
-    renderDiaryMonthSummary();
+    renderCurrentMonthSummaryInCard();
   });
   el('nextMonth').addEventListener('click', () => {
     currentMonth++;
@@ -538,7 +601,7 @@ function init() {
     renderMonthLabel();
     clampSelectedWeekToMonth();
     refreshSessions();
-    renderDiaryMonthSummary();
+    renderCurrentMonthSummaryInCard();
   });
 
   el('prevWeek').addEventListener('click', () => {
@@ -607,10 +670,6 @@ function init() {
   el('fieldEndTime').addEventListener('input', () => { saveDraft(); updateValidationFromForm(); });
   el('fieldBreaks').addEventListener('input', () => { saveDraft(); updateValidationFromForm(); });
   el('fieldNotes').addEventListener('input', saveDraft);
-
-  el('diaryMonthSummaryText').addEventListener('blur', () => {
-    saveMonthNote(getMonthKey(currentYear, currentMonth), el('diaryMonthSummaryText').value);
-  });
 
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => showView(tab.dataset.view));

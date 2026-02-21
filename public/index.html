@@ -40,12 +40,39 @@
         </div>
         <p id="currentWeekGoalsEmpty" class="goals-empty hidden">Цели на эту неделю не заданы.</p>
         <div id="currentWeekSummaryBlock" class="goals-summary-block">
-          <div id="currentWeekSummaryView" class="goals-summary-view">
-            <p id="currentWeekSummaryText" class="goals-summary-text hidden"></p>
-            <button type="button" id="btnToggleWeekSummary" class="btn-summary-toggle" aria-label="Итоги недели">+ Итоги недели</button>
+          <div id="goalsSummaryHeadsRow" class="goals-summary-heads-row">
+            <div class="goals-summary-head">
+              <span class="goals-summary-label">Итоги недели</span>
+              <button type="button" id="btnToggleWeekSummary" class="btn-summary-icon" aria-label="Итоги недели" title="Итоги недели"></button>
+            </div>
+            <div id="goalsSummaryMonthInline" class="goals-summary-month-inline visible-on-card-hover">
+              <span class="goals-summary-sep" aria-hidden="true">|</span>
+              <div class="goals-summary-head">
+                <span class="goals-summary-label">Итоги месяца</span>
+                <button type="button" id="btnToggleMonthSummary" class="btn-summary-icon" aria-label="Итоги месяца" title="Итоги месяца"></button>
+              </div>
+            </div>
           </div>
-          <div id="goalSummaryInputWrap" class="goal-new-input-wrap hidden">
+          <div id="goalsSummaryWeekBlock" class="goals-summary-item">
+            <p id="currentWeekSummaryText" class="goals-summary-text hidden"></p>
+          </div>
+          <div id="goalSummaryInputWrap" class="goal-summary-input-block hidden">
+            <span class="goals-summary-label">Итоги недели</span>
             <textarea id="goalSummaryInput" class="goal-summary-input" placeholder="Что сделал за неделю..." rows="3"></textarea>
+          </div>
+          <div id="goalsSummaryMonthSection" class="goals-summary-month-section hidden">
+            <hr class="goals-summary-divider" aria-hidden="true">
+            <div class="goals-summary-head">
+              <span class="goals-summary-label">Итоги месяца</span>
+              <button type="button" id="btnToggleMonthSummaryInSection" class="btn-summary-icon" aria-label="Итоги месяца" title="Итоги месяца"></button>
+            </div>
+            <div id="goalsSummaryMonthBlock" class="goals-summary-item">
+              <p id="currentMonthSummaryText" class="goals-summary-text hidden"></p>
+            </div>
+          </div>
+          <div id="monthSummaryInputWrap" class="goal-summary-input-block hidden">
+            <span class="goals-summary-label">Итоги месяца</span>
+            <textarea id="monthSummaryInput" class="goal-summary-input" placeholder="Заполняй в конце месяца: что успел, какие модули, итоги..." rows="3"></textarea>
           </div>
         </div>
       </section>
@@ -128,10 +155,6 @@
           </tbody>
         </table>
         <p id="emptyState" class="empty-state">Нет сессий за выбранный период.</p>
-      </section>
-      <section class="month-summary-section diary-month-summary">
-        <h2>Итоги месяца <span id="diaryMonthSummaryLabel" class="muted"></span></h2>
-        <textarea id="diaryMonthSummaryText" rows="3" placeholder="Заполняй в конце месяца: что успел, какие модули, итоги..."></textarea>
       </section>
     </main>
 
