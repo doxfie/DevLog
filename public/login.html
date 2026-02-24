@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevLog — Вход</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #101016;
+      background-image: radial-gradient(ellipse 80% 60% at 50% 0%, #16161e 0%, transparent 70%);
+      background-attachment: fixed;
+      color: #e2e2ea;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: #151519;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      padding: 40px 32px 32px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+      animation: card-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .login-sub {
+      font-size: 13px;
+      color: #5c5c72;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #5c5c72;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0e0e14;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      color: #e2e2ea;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 150ms, box-shadow 150ms;
+    }
+
+    .field input:hover {
+      border-color: rgba(255, 255, 255, 0.13);
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: #7c6aef;
+      box-shadow: 0 0 0 3px rgba(124, 106, 239, 0.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 11px;
+      background: #6455cc;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: background 150ms, box-shadow 150ms, transform 150ms;
+      margin-top: 8px;
+    }
+
+    .btn-login:hover {
+      background: #7c6aef;
+      box-shadow: 0 0 24px rgba(124, 106, 239, 0.18);
+    }
+
+    .btn-login:active {
+      transform: scale(0.97);
+      box-shadow: none;
+    }
+
+    .error-msg {
+      text-align: center;
+      font-size: 13px;
+      color: #f87171;
+      margin-bottom: 16px;
+      animation: shake 0.35s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+
+    ::selection {
+      background: rgba(124, 106, 239, 0.12);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">Дневник учёбы</div>
+      <div class="login-sub">Войдите, чтобы продолжить</div>
+    </div>
+
+    <script>
+      if (location.search.includes('error=1')) {
+        document.write('<div class="error-msg">Неверный логин или пароль</div>');
+      }
+    </script>
+
+    <form method="POST" action="/login">
+      <div class="field">
+        <label for="username">Логин</label>
+        <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-login">Войти</button>
+    </form>
+  </div>
+</body>
+</html>

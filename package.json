@@ -4,13 +4,15 @@
   "description": "Study log — веб-дневник учёбы с бэкендом",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node --env-file=.env server.js",
+    "dev": "node --env-file=.env --watch server.js",
     "import-excel": "node import-from-excel.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.0.0",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "express-session": "^1.19.0"
   },
   "devDependencies": {
     "xlsx": "^0.18.5"

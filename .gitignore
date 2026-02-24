@@ -2,3 +2,4 @@ node_modules/
 devlog.db
 *.db-journal
 assets/
+.env

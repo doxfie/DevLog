@@ -7,7 +7,7 @@ import {
 
 import {
   fetchNow, loadSessions as apiLoadSessions, createSession, updateSession, removeSession,
-  loadMonthNote, saveMonthNote, loadWeekNote, saveWeekNote
+  loadMonthNote, saveMonthNote, loadWeekNote, saveWeekNote, loadStats
 } from './api.js';
 
 import {
@@ -27,6 +27,7 @@ let viewSessionsBy = 'week';
 let sessionsListCache = [];
 let editingSessionId = null;
 let toastTimeoutId = null;
+let toastCountdownId = null;
 
 // ——— Навигация: месяц и неделя ———
 
@@ -379,13 +380,73 @@ function cancelEdit() {
 }
 
 function startEditSession(session) {
-  el('fieldDate').value = session.started_at.slice(0, 10);
-  el('fieldStartTime').value = session.started_at.slice(11, 16);
-  el('fieldEndTime').value = session.ended_at.slice(11, 16);
-  el('fieldBreaks').value = String(session.breaks_minutes ?? 0);
-  el('fieldNotes').value = session.notes ?? '';
-  saveDraft();
-  setFormEditMode(session.id);
+  cancelInlineEdit();
+  const row = document.querySelector(`tr[data-session-id="${session.id}"]`);
+  if (!row) return;
+  row.classList.add('inline-editing');
+  row.dataset.originalSession = row.dataset.session;
+
+  const date = session.started_at.slice(0, 10);
+  const startTime = session.started_at.slice(11, 16);
+  const endTime = session.ended_at.slice(11, 16);
+  const breaks = session.breaks_minutes ?? 0;
+  const notes = session.notes ?? '';
+
+  row.innerHTML = `
+    <td><input type="date" class="inline-input" value="${date}" data-field="date"></td>
+    <td>
+      <div class="inline-time-cell">
+        <input type="time" class="inline-input inline-time" value="${startTime}" data-field="start">
+        <span class="inline-time-sep">–</span>
+        <input type="time" class="inline-input inline-time" value="${endTime}" data-field="end">
+      </div>
+    </td>
+    <td><input type="number" class="inline-input inline-breaks" value="${breaks}" min="0" data-field="breaks"></td>
+    <td class="studied">${formatDuration(studiedMinutes(session))}</td>
+    <td><textarea class="inline-input inline-notes" data-field="notes" rows="2">${escapeHtml(notes)}</textarea></td>
+    <td class="row-actions-cell">
+      <button type="button" class="btn-inline-save" aria-label="Сохранить" title="Сохранить">✓</button>
+      <button type="button" class="btn-inline-cancel" aria-label="Отмена" title="Отмена">✕</button>
+    </td>
+  `;
+  row.querySelector('[data-field="notes"]')?.focus();
+}
+
+function cancelInlineEdit() {
+  const editing = document.querySelector('tr.inline-editing');
+  if (!editing) return;
+  if (editing.dataset.originalSession) {
+    editing.dataset.session = editing.dataset.originalSession;
+  }
+  renderSessions(sessionsListCache);
+}
+
+async function saveInlineEdit(row) {
+  const session = JSON.parse(row.dataset.originalSession || row.dataset.session);
+  const date = row.querySelector('[data-field="date"]').value;
+  const start = row.querySelector('[data-field="start"]').value;
+  const end = row.querySelector('[data-field="end"]').value;
+  const breaks = parseInt(row.querySelector('[data-field="breaks"]').value, 10) || 0;
+  const notes = row.querySelector('[data-field="notes"]').value.trim();
+
+  if (!date || !start || !end) return;
+
+  const started_at = `${date}T${start}:00`;
+  let endDate = date;
+  if (end < start) {
+    const d = new Date(date + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    endDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const ended_at = `${endDate}T${end}:00`;
+
+  try {
+    await updateSession(session.id, { started_at, ended_at, breaks_minutes: breaks, notes });
+  } catch (err) {
+    showToast(err.message || 'Ошибка сохранения');
+    return;
+  }
+  refreshSessions();
 }
 
 function buildStartedEnded(form) {
@@ -458,7 +519,16 @@ async function submitSession(e) {
     return;
   }
   hideFormValidation();
+  flashFormSuccess();
   refreshSessions();
+}
+
+function flashFormSuccess() {
+  const section = document.querySelector('.form-section');
+  section.classList.remove('form-success');
+  void section.offsetWidth;
+  section.classList.add('form-success');
+  section.addEventListener('animationend', () => section.classList.remove('form-success'), { once: true });
 }
 
 function updateValidationFromForm() {
@@ -475,24 +545,60 @@ function updateValidationFromForm() {
 function showToast(message, options = {}) {
   const container = el('toast');
   const undoBtn = el('toastUndo');
+  const timer = el('toastTimer');
+  const ring = el('toastTimerRing');
+  const countEl = el('toastTimerCount');
+  const CIRCUMFERENCE = 2 * Math.PI * 16; // r=16
+
   el('toastMessage').textContent = message;
   container.classList.remove('hidden');
   undoBtn.classList.toggle('hidden', !options.onUndo);
+
   if (toastTimeoutId) clearTimeout(toastTimeoutId);
+  if (toastCountdownId) clearInterval(toastCountdownId);
   toastTimeoutId = null;
+  toastCountdownId = null;
+
+  const hideToast = () => {
+    if (toastTimeoutId) clearTimeout(toastTimeoutId);
+    if (toastCountdownId) clearInterval(toastCountdownId);
+    toastTimeoutId = null;
+    toastCountdownId = null;
+    container.classList.add('hidden');
+    timer.classList.add('hidden');
+    undoBtn.classList.add('hidden');
+  };
+
   if (options.onUndo) {
+    const duration = 5;
+    let remaining = duration;
+
+    timer.classList.remove('hidden');
+    ring.style.transition = 'none';
+    ring.style.strokeDasharray = `${CIRCUMFERENCE}`;
+    ring.style.strokeDashoffset = '0';
+    countEl.textContent = remaining;
+
+    requestAnimationFrame(() => {
+      ring.style.transition = `stroke-dashoffset ${duration}s linear`;
+      ring.style.strokeDashoffset = `${CIRCUMFERENCE}`;
+    });
+
+    toastCountdownId = setInterval(() => {
+      remaining--;
+      countEl.textContent = Math.max(remaining, 0);
+      if (remaining <= 0) clearInterval(toastCountdownId);
+    }, 1000);
+
     undoBtn.onclick = () => {
-      if (toastTimeoutId) clearTimeout(toastTimeoutId);
-      toastTimeoutId = null;
-      container.classList.add('hidden');
-      undoBtn.classList.add('hidden');
+      hideToast();
       options.onUndo();
     };
-    toastTimeoutId = setTimeout(() => {
-      container.classList.add('hidden');
-      undoBtn.classList.add('hidden');
-      toastTimeoutId = null;
-    }, 5000);
+
+    toastTimeoutId = setTimeout(hideToast, duration * 1000);
+  } else {
+    timer.classList.add('hidden');
+    toastTimeoutId = setTimeout(hideToast, 3000);
   }
 }
 
@@ -551,7 +657,25 @@ function showView(viewId) {
     el('headerDiaryInfo').style.display = 'none';
     el('headerTotalAll').classList.add('hidden');
     loadSettingsFromStorage();
+    loadAboutInfo();
   }
+}
+
+async function loadAboutInfo() {
+  try {
+    const stats = await loadStats();
+    el('aboutSessionsCount').textContent = stats.count ?? '—';
+    const totalH = stats.totalStudiedMinutes
+      ? (stats.totalStudiedMinutes / 60).toFixed(1)
+      : '—';
+    el('aboutTotalHours').textContent = totalH === '—' ? '—' : `${totalH} ч`;
+    el('aboutFirstDate').textContent = stats.firstDate
+      ? new Date(stats.firstDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+      : '—';
+    el('aboutLastDate').textContent = stats.lastDate
+      ? new Date(stats.lastDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+      : '—';
+  } catch { /* silent */ }
 }
 
 // ——— Инициализация ———
@@ -573,6 +697,12 @@ function init() {
   window.addEventListener('beforeunload', saveDraft);
 
   el('sessionForm').addEventListener('submit', submitSession);
+  el('sessionForm').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      el('sessionForm').requestSubmit();
+    }
+  });
   el('btnPause').addEventListener('click', togglePause);
 
   el('btnAddGoal').addEventListener('click', showAddGoalInput);
@@ -644,14 +774,31 @@ function init() {
 
   el('sessionsBody').addEventListener('click', (e) => {
     const row = e.target.closest('tr');
-    if (!row || !row.dataset.session) return;
+    if (!row) return;
+    if (e.target.closest('.btn-inline-save')) {
+      saveInlineEdit(row);
+      return;
+    }
+    if (e.target.closest('.btn-inline-cancel')) {
+      cancelInlineEdit();
+      return;
+    }
+    if (row.classList.contains('inline-editing')) return;
+    if (!row.dataset.session) return;
     const session = JSON.parse(row.dataset.session);
     if (e.target.closest('.btn-delete')) {
       deleteSession(session.id, session);
       return;
     }
-    if (e.target.closest('.btn-edit') || !e.target.closest('button')) {
+    if (e.target.closest('.btn-edit')) {
       startEditSession(session);
+    }
+  });
+  el('sessionsBody').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cancelInlineEdit();
+    if (e.key === 'Enter' && !e.target.matches('textarea')) {
+      const row = e.target.closest('tr.inline-editing');
+      if (row) { e.preventDefault(); saveInlineEdit(row); }
     }
   });
 

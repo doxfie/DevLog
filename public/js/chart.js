@@ -52,30 +52,52 @@ function aggregateByMonthDetailed(sessions) {
 // ——— Тема и конфигурация Chart.js ———
 
 const CHART_THEME = {
-  grid: 'rgba(255, 255, 255, 0.08)',
-  tick: '#c9d1d9',
-  line: '#5b9bd5',
-  fill: 'rgba(91, 155, 213, 0.15)',
-  goalLine: 'rgba(210, 153, 34, 0.95)'
+  grid: 'rgba(255, 255, 255, 0.05)',
+  tick: '#9898a8',
+  line: '#7c6aef',
+  lineLight: 'rgba(124, 106, 239, 0.4)',
+  point: '#a496ff',
+  pointBorder: '#131318',
+  goalLine: 'rgba(251, 191, 36, 0.6)',
+  goalLineDash: [5, 5],
+  font: "'Plus Jakarta Sans', sans-serif"
 };
+
+function createGradientFill(ctx, chartArea) {
+  if (!chartArea) return CHART_THEME.lineLight;
+  const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+  gradient.addColorStop(0, 'rgba(124, 106, 239, 0.25)');
+  gradient.addColorStop(0.6, 'rgba(124, 106, 239, 0.06)');
+  gradient.addColorStop(1, 'rgba(124, 106, 239, 0)');
+  return gradient;
+}
 
 function getChartOptions() {
   return {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'index' },
+    animation: { duration: 600, easing: 'easeOutQuart' },
     plugins: {
       legend: { display: false },
       tooltip: { enabled: false }
     },
     scales: {
       x: {
-        grid: { color: CHART_THEME.grid },
-        ticks: { color: CHART_THEME.tick, maxRotation: 45, font: { size: 11 } }
+        grid: { color: CHART_THEME.grid, drawBorder: false },
+        ticks: {
+          color: CHART_THEME.tick,
+          maxRotation: 45,
+          font: { size: 11, family: CHART_THEME.font }
+        }
       },
       y: {
-        grid: { color: CHART_THEME.grid },
-        ticks: { color: CHART_THEME.tick, font: { size: 11 } },
+        grid: { color: CHART_THEME.grid, drawBorder: false },
+        ticks: {
+          color: CHART_THEME.tick,
+          font: { size: 11, family: CHART_THEME.font },
+          padding: 8
+        },
         beginAtZero: true
       }
     }
@@ -89,15 +111,23 @@ function createLineDataset(values) {
     label: 'Часы',
     data: values,
     borderColor: CHART_THEME.line,
-    backgroundColor: CHART_THEME.fill,
-    borderWidth: 2,
+    backgroundColor(context) {
+      const chart = context.chart;
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return CHART_THEME.lineLight;
+      return createGradientFill(ctx, chartArea);
+    },
+    borderWidth: 2.5,
     fill: 'origin',
-    tension: 0.3,
+    tension: 0.35,
     pointRadius: 4,
-    pointBackgroundColor: CHART_THEME.line,
-    pointBorderColor: 'rgba(13, 17, 23, 0.8)',
-    pointBorderWidth: 1,
-    pointHoverRadius: 6
+    pointBackgroundColor: CHART_THEME.point,
+    pointBorderColor: CHART_THEME.pointBorder,
+    pointBorderWidth: 2,
+    pointHoverRadius: 7,
+    pointHoverBackgroundColor: '#fff',
+    pointHoverBorderColor: CHART_THEME.line,
+    pointHoverBorderWidth: 2.5
   };
 }
 
@@ -108,7 +138,7 @@ function createThresholdDataset(thresholdHours, labelCount) {
     data: Array(labelCount).fill(t),
     borderColor: CHART_THEME.goalLine,
     borderWidth: 1.5,
-    borderDash: [6, 4],
+    borderDash: CHART_THEME.goalLineDash,
     fill: false,
     pointRadius: 0,
     tension: 0
@@ -185,6 +215,62 @@ function bindCustomTooltip(chart, tooltipMeta) {
   canvas.addEventListener('mouseleave', onLeave);
 }
 
+// ——— KPI Cards ———
+
+function renderKpiCards(weekKeys, byWeek, byWeekDet, stats) {
+  const thresholdHours = parseInt(el('weekThreshold')?.value, 10) || 10;
+  const currentWeek = weekKeys[weekKeys.length - 1];
+  const prevWeek = weekKeys.length >= 2 ? weekKeys[weekKeys.length - 2] : null;
+
+  const curMin = byWeek[currentWeek] || 0;
+  const curHours = toHours(curMin);
+  const prevMin = prevWeek ? (byWeek[prevWeek] || 0) : 0;
+  const prevHours = toHours(prevMin);
+
+  el('kpiWeekHours').textContent = `${curHours} ч`;
+  el('kpiWeekGoal').textContent = `цель: ${thresholdHours} ч`;
+
+  const pct = thresholdHours > 0 ? Math.min((curHours / thresholdHours) * 100, 100) : 0;
+  const bar = el('kpiWeekBar');
+  bar.style.width = `${pct}%`;
+  bar.classList.toggle('over-goal', curHours >= thresholdHours);
+
+  let totalSessions = 0;
+  let totalSessionMinutes = 0;
+  for (const key of weekKeys) {
+    const det = byWeekDet[key];
+    if (det) {
+      totalSessions += det.sessionsCount;
+      totalSessionMinutes += det.minutes;
+    }
+  }
+  const avgMin = totalSessions > 0 ? Math.round(totalSessionMinutes / totalSessions) : 0;
+  el('kpiAvgSession').textContent = formatDuration(avgMin);
+  el('kpiAvgSub').textContent = `за ${totalSessions} сессий`;
+
+  const totalAll = stats.totalStudiedMinutes || 0;
+  const totalH = Math.round((totalAll / 60) * 10) / 10;
+  el('kpiTotal').textContent = `${totalH} ч`;
+  el('kpiTotalSessions').textContent = `за всё время`;
+
+  const delta = Math.round((curHours - prevHours) * 10) / 10;
+  const deltaEl = el('kpiDelta');
+  const deltaSubEl = el('kpiDeltaSub');
+  if (delta > 0) {
+    deltaEl.textContent = `+${delta} ч`;
+    deltaEl.className = 'kpi-value kpi-delta--positive';
+    deltaSubEl.textContent = 'больше прошлой';
+  } else if (delta < 0) {
+    deltaEl.textContent = `${delta} ч`;
+    deltaEl.className = 'kpi-value kpi-delta--negative';
+    deltaSubEl.textContent = 'меньше прошлой';
+  } else {
+    deltaEl.textContent = '0 ч';
+    deltaEl.className = 'kpi-value kpi-delta--neutral';
+    deltaSubEl.textContent = 'как прошлая';
+  }
+}
+
 // ——— Рендер дашборда ———
 
 let chartWeeks = null;
@@ -247,6 +333,8 @@ export async function renderDashboard() {
 
   el('dashboardWeeksLabel').textContent = `(последние ${DASHBOARD_WEEKS} недель)`;
   el('dashboardMonthsLabel').textContent = '(последние 12 месяцев)';
+
+  renderKpiCards(sortedWeeksList, byWeek, byWeekDet, stats);
 
   const weeksValues = sortedWeeksList.map((w) => toHours(byWeek[w] || 0));
   const monthsValues = sortedMonths.map((m) => toHours(byMonth[m]));

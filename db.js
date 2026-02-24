@@ -3,7 +3,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database(join(__dirname, 'devlog.db'));
+const dbPath = process.env.DB_PATH || join(__dirname, 'devlog.db');
+const db = new Database(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
@@ -74,6 +75,17 @@ export function updateSession(id, { started_at, ended_at, breaks_minutes, notes 
 
 export function deleteSession(id) {
   db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
+}
+
+export function getSessionsInfo() {
+  const count = db.prepare('SELECT COUNT(*) as cnt FROM sessions').get();
+  const first = db.prepare('SELECT started_at FROM sessions ORDER BY started_at ASC LIMIT 1').get();
+  const last = db.prepare('SELECT started_at FROM sessions ORDER BY started_at DESC LIMIT 1').get();
+  return {
+    count: count?.cnt || 0,
+    firstDate: first?.started_at?.slice(0, 10) || null,
+    lastDate: last?.started_at?.slice(0, 10) || null
+  };
 }
 
 export function getTotalStudiedMinutes() {
