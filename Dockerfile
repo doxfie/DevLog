@@ -14,4 +14,4 @@ ENV DB_PATH=/app/data/devlog.db
 
 EXPOSE 3000
 
-CMD ["node", "--env-file=.env", "server.js"]
+CMD ["node", "server.js"]

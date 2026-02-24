@@ -150,19 +150,22 @@ cd /opt/devlog
 # Сгенерировать SESSION_SECRET
 openssl rand -hex 32
 
-# Сгенерировать AUTH_PASS_HASH (нужен Node.js или Docker)
-docker run --rm node:20-alpine \
-  node -e "import('bcrypt').then(b=>b.default.hash('ТВОЙ_ПАРОЛЬ',12).then(console.log))"
+# Сгенерировать AUTH_PASS_HASH (после первой сборки: docker compose build)
+docker run --rm -e PASS='твой_пароль' devlog-app \
+  node -e "import('bcrypt').then(b=>b.default.hash(process.env.PASS,12).then(console.log))"
 ```
 
+Создай файл `.env`. **Важно:** Docker Compose подставляет переменные из `.env`; символ `$` в значении трактуется как переменная. В хеше bcrypt каждый `$` запиши как `$$` (иначе будет «variable is not set» и пустой пароль). Пример: `AUTH_PASS_HASH=$$2b$$12$$q2Xhq2U71chZKo6bezKhMO...`
+
 ```bash
-cat > .env << 'EOF'
-PORT=3000
-SESSION_SECRET=сгенерированный_секрет
-AUTH_USER=admin
-AUTH_PASS_HASH=сгенерированный_хеш
-DB_PATH=/app/data/devlog.db
-EOF
+nano .env
+# PORT=3000
+# SESSION_SECRET=твой_секрет
+# AUTH_USER=admin
+# AUTH_PASS_HASH=$$2b$$12$$...  (каждый $ в хеше — два символа $$)
+# DB_PATH=/app/data/devlog.db
+
+chmod 600 .env
 ```
 
 ### 4. Первый запуск
