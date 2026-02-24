@@ -1,18 +1,12 @@
-FROM node:20-alpine AS builder
-
-RUN apk add --no-cache python3 make g++
+# bookworm-slim = glibc → better-sqlite3 подтягивает пресобранный бинарник, без компиляции
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-FROM node:20-alpine
-
-WORKDIR /app
-COPY --from=builder /app/node_modules ./node_modules
-COPY package.json server.js db.js ./
+COPY server.js db.js ./
 COPY public ./public
-
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production

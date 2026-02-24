@@ -58,7 +58,7 @@ SESSION_SECRET=случайная-строка-32+символов
 server.js              Express-сервер, API, авторизация, статика
 db.js                  SQLite: схема, CRUD сессий и заметок
 import-from-excel.js   Утилита импорта из Excel
-Dockerfile             Multi-stage build (Node 20 Alpine)
+Dockerfile             Node 20 Bookworm Slim (glibc → быстрая сборка без компиляции better-sqlite3)
 docker-compose.yml     Docker Compose конфигурация
 public/
   index.html           SPA: разметка трёх вкладок
@@ -110,7 +110,6 @@ sudo apt install -y git
 
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/devlog_deploy -N ""
-chmod 700 ~/.ssh
 chmod 600 ~/.ssh/devlog_deploy ~/.ssh/devlog_deploy.pub
 ```
 
@@ -173,6 +172,8 @@ mkdir -p data
 docker compose up -d --build
 # Проверить: docker compose logs -f
 ```
+
+Сборка занимает 1–2 минуты: образ на Debian (bookworm-slim), `better-sqlite3` ставится из пресобранного бинарника, без компиляции.
 
 ### 5. Настройка Nginx (reverse proxy + SSL)
 
