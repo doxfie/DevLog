@@ -3,3 +3,10 @@ devlog.db
 *.db-journal
 assets/
 .env
+
+# Cursor / IDE — не пушить в репозиторий
+.cursor/
+.agents/
+skills-lock.json
+*.plan.md
+.cursorignore
