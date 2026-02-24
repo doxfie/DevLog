@@ -23,4 +23,4 @@
 - Node.js 20+
 - Для продакшена: Docker, Nginx, домен для SSL
 
-[0.9.0]: https://github.com/OWNER/DevLog/releases/tag/v0.9.0
+[0.9.0]: https://github.com/doxfie/DevLog/releases/tag/v0.9.0

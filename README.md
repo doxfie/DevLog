@@ -104,11 +104,43 @@ sudo apt install -y git
 
 ### 2. Клонировать репозиторий
 
+**Приватный репозиторий:** при `git clone https://...` GitHub запросит Username/Password; пароль аккаунта не подойдёт. Используй SSH (Deploy Key без PAT).
+
+**2.1. SSH Deploy Key на VPS**
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/devlog_deploy -N ""
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/devlog_deploy ~/.ssh/devlog_deploy.pub
+```
+
+Добавь в `~/.ssh/config`:
+
+```
+Host github.com
+  User git
+  IdentityFile ~/.ssh/devlog_deploy
+  IdentitiesOnly yes
+```
+
+**2.2. Добавить ключ на GitHub**
+
+Репозиторий → **Settings** → **Deploy keys** → **Add deploy key**.  
+Вставь содержимое `~/.ssh/devlog_deploy.pub`. Read-only, без галки «Allow write access».
+
+**2.3. Проверка и клонирование**
+
+```bash
+ssh -T git@github.com
+# При первом подключении: yes (host key попадёт в ~/.ssh/known_hosts)
+# Ожидай: "Hi doxfie/DevLog! You've successfully authenticated..."
+```
+
 ```bash
 sudo mkdir -p /opt/devlog
 sudo chown $USER:$USER /opt/devlog
 cd /opt/devlog
-git clone https://github.com/ТВОЙ_ЮЗЕР/DevLog.git .
+git clone git@github.com:doxfie/DevLog.git .
 ```
 
 ### 3. Создать `.env` на сервере
