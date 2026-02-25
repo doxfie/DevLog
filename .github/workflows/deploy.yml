@@ -17,5 +17,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/devlog
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             docker compose up -d --build
