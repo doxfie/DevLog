@@ -1,26 +1,31 @@
 # Changelog
 
-## [0.9.0] — 2026-02-23
+## [1.0.0] — 2026-02-25
 
-Первый публичный релиз. Готовность к деплою на VPS.
+Первый стабильный релиз. Дневник учёбы с авторизацией и деплоем на VPS.
 
-### Добавлено
+### Возможности
 
-- **Авторизация** — форма входа, сессии (express-session + bcrypt), защита API и статики
-- **Docker** — multi-stage Dockerfile, docker-compose с volume для БД
-- **CI/CD** — GitHub Actions: push в `main` → SSH на VPS, `git pull`, `docker compose up --build`
-- **Документация** — инструкция по настройке VPS (Ubuntu 24.04, Nginx, Certbot, первый деплой)
-- **UI** — страница логина в стиле dark-premium
+- Учёт сессий (дата, время, перерывы, заметки), черновик формы, удаление с откатом
+- Дашборд: графики по неделям/месяцам, KPI-карточки, пороги целей
+- Итоги и цели по неделям, итоги месяца
+- Настройки: пороги на графиках, блок «О приложении» (версия, статистика)
+- Авторизация: один пользователь, логин/пароль из `.env`, сессии (express-session + bcrypt)
+- Docker: образ Node 20 Bookworm Slim, порт только на 127.0.0.1
+- CI/CD: GitHub Actions — fetch + reset --hard, docker compose up --build
+- Документация: первая установка на VPS (Ubuntu 22.04/24.04), Nginx, HTTPS, rate-limit на POST /login, UFW, два ключа (Deploy Key и SSH для Actions)
 
-### Технические изменения
-
-- `db.js`: путь к БД настраивается через `DB_PATH`
-- `.env.example` — шаблон переменных для авторизации и сессии
-- `.gitignore` — исключены `.cursor/`, `.agents/`, `skills-lock.json`
-
-### Требования
+### Технические требования
 
 - Node.js 20+
-- Для продакшена: Docker, Nginx, домен для SSL
+- Продакшен: Docker, Nginx, домен для SSL
+
+[1.0.0]: https://github.com/doxfie/DevLog/releases/tag/v1.0.0
+
+---
+
+## [0.9.0] — 2026-02-23
+
+Предрелиз: авторизация, Docker, CI/CD, базовая инструкция по VPS.
 
 [0.9.0]: https://github.com/doxfie/DevLog/releases/tag/v0.9.0
