@@ -92,7 +92,7 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background: var(--bg);
-  background-image: radial-gradient(ellipse 80% 60% at 50% 0%, var(--bg-subtle) 0%, transparent 70%);
+  background-image: radial-gradient(ellipse 100% 70% at 50% 0%, #1c1c26 0%, var(--bg-subtle) 40%, transparent 65%);
   background-attachment: fixed;
   color: var(--text);
   line-height: 1.6;
