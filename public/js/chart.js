@@ -312,11 +312,15 @@ export async function renderDashboard() {
   }
   sortedWeeksList.reverse();
 
+  const weekRangeEnd = new Date(sortedWeeksList[sortedWeeksList.length - 1] + 'T12:00:00');
+  weekRangeEnd.setDate(weekRangeEnd.getDate() + 6);
+  const weekTo = weekRangeEnd.toISOString().slice(0, 10);
+
   const fromMonths = new Date(year - 1, month, 1);
   const toMonths = new Date(year, month, 0);
 
   const [sessionsWeeks, sessionsMonths, stats] = await Promise.all([
-    loadSessionsByRange(sortedWeeksList[0], sortedWeeksList[sortedWeeksList.length - 1]),
+    loadSessionsByRange(sortedWeeksList[0], weekTo),
     loadSessionsByRange(fromMonths.toISOString().slice(0, 10), toMonths.toISOString().slice(0, 10)),
     loadStats()
   ]);
