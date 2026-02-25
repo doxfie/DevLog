@@ -92,10 +92,15 @@ app.get('/api/now', (req, res) => {
 
 app.get('/api/sessions', (req, res) => {
   try {
-    const { year, month } = req.query;
-    const list = year && month
-      ? db.getSessionsByMonth(year, month)
-      : db.getAllSessions();
+    const { year, month, from, to } = req.query;
+    let list;
+    if (from && to) {
+      list = db.getSessionsByDateRange(from, to);
+    } else if (year && month) {
+      list = db.getSessionsByMonth(year, month);
+    } else {
+      list = db.getAllSessions();
+    }
     res.json(list);
   } catch (e) {
     res.status(500).json({ error: e.message });
