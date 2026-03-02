@@ -127,7 +127,7 @@ function renderCurrentMonthSummaryInCard() {
   loadMonthNote(monthKey).then((summary) => {
     const hasSummary = summary && summary.trim().length > 0;
     if (hasSummary) {
-      textEl.textContent = stripSummaryDashes(summary);
+      textEl.innerHTML = renderSummaryAsList(summary);
       textEl.classList.remove('hidden');
       btnSection.textContent = ICON_PENCIL;
       btnSection.setAttribute('aria-label', 'Изменить итоги месяца');
@@ -137,7 +137,7 @@ function renderCurrentMonthSummaryInCard() {
       monthInline.classList.remove('visible-on-card-hover');
     } else {
       textEl.classList.add('hidden');
-      textEl.textContent = '';
+      textEl.innerHTML = '';
       btnRow.innerHTML = SVG_PLUS;
       btnRow.setAttribute('aria-label', 'Итоги месяца');
       btnRow.title = 'Итоги месяца';
@@ -157,7 +157,7 @@ function renderDashboardMonthSummary() {
       section.classList.add('hidden');
     } else {
       section.classList.remove('hidden');
-      el('dashboardMonthSummaryDisplay').textContent = summary;
+      el('dashboardMonthSummaryDisplay').innerHTML = renderSummaryAsList(summary);
     }
   });
 }
@@ -258,6 +258,15 @@ function stripSummaryDashes(text) {
   return text.split('\n').map((line) => line.replace(/^\s*[-–—]\s*/, '')).join('\n').trim();
 }
 
+/** Собирает HTML списка для итогов (каждая строка — пункт списка). */
+function renderSummaryAsList(text) {
+  const t = stripSummaryDashes(text);
+  if (!t || !t.trim()) return '';
+  const lines = t.split('\n').map((s) => s.trim()).filter(Boolean);
+  if (lines.length === 0) return '';
+  return '<ul class="goals-summary-ul">' + lines.map((l) => '<li>' + escapeHtml(l) + '</li>').join('') + '</ul>';
+}
+
 function renderCurrentWeekSummary() {
   const weekKey = selectedWeekKey || getCurrentWeekKey();
   const textEl = el('currentWeekSummaryText');
@@ -266,14 +275,14 @@ function renderCurrentWeekSummary() {
   loadWeekNote(weekKey).then(({ summary }) => {
     const hasSummary = summary && summary.trim().length > 0;
     if (hasSummary) {
-      textEl.textContent = stripSummaryDashes(summary);
+      textEl.innerHTML = renderSummaryAsList(summary);
       textEl.classList.remove('hidden');
       btnEl.textContent = ICON_PENCIL;
       btnEl.setAttribute('aria-label', 'Изменить итоги недели');
       btnEl.title = 'Изменить итоги недели';
     } else {
       textEl.classList.add('hidden');
-      textEl.textContent = '';
+      textEl.innerHTML = '';
       btnEl.innerHTML = SVG_PLUS;
       btnEl.setAttribute('aria-label', 'Итоги недели');
       btnEl.title = 'Итоги недели';

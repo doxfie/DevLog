@@ -316,7 +316,7 @@ export async function renderDashboard() {
   weekRangeEnd.setDate(weekRangeEnd.getDate() + 6);
   const weekTo = weekRangeEnd.toISOString().slice(0, 10);
 
-  const fromMonths = new Date(year - 1, month, 1);
+  const fromMonths = new Date(year - 1, month - 1, 1);
   const toMonths = new Date(year, month, 0);
 
   const [sessionsWeeks, sessionsMonths, stats] = await Promise.all([

@@ -1051,11 +1051,29 @@ body {
   margin: 0;
   font-size: 14px;
   color: var(--text-muted);
-  white-space: pre-wrap;
-  word-break: break-word;
   line-height: 1.5;
 }
 .goals-summary-text.hidden { display: none; }
+.goals-summary-ul {
+  margin: 0;
+  padding-left: 1.25em;
+  list-style-type: disc;
+}
+.goals-summary-ul li {
+  margin-bottom: 0.35em;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+.month-summary-display .goals-summary-ul {
+  margin: 0;
+  padding-left: 1.25em;
+  list-style-type: disc;
+}
+.month-summary-display .goals-summary-ul li {
+  margin-bottom: 0.35em;
+  color: var(--text-muted);
+  word-break: break-word;
+}
 .btn-summary-icon {
   display: inline-flex;
   align-items: center;
