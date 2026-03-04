@@ -32,12 +32,14 @@ let toastCountdownId = null;
 // ——— Навигация: месяц и неделя ———
 
 function renderMonthLabel() {
-  el('currentMonthLabel').textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
+  const trigger = document.getElementById('headerMonthTrigger');
+  if (trigger) trigger.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
 }
 
 function renderWeekLabel() {
   if (!selectedWeekKey) return;
-  el('currentWeekLabel').textContent = `${formatWeekLabel(selectedWeekKey)}.${new Date(selectedWeekKey + 'T12:00:00').getFullYear()}`;
+  const trigger = document.getElementById('headerWeekTrigger');
+  if (trigger) trigger.textContent = `${formatWeekLabel(selectedWeekKey)}.${new Date(selectedWeekKey + 'T12:00:00').getFullYear()}`;
 }
 
 function updatePeriodLabel() {
@@ -53,10 +55,135 @@ function clampSelectedWeekToMonth() {
 }
 
 function triggerWeekPickerWarning() {
-  const wrap = document.querySelector('.week-picker');
+  const wrap = document.getElementById('headerPeriodPicker');
   if (!wrap) return;
   wrap.classList.add('week-picker-shake', 'week-picker-warning');
   setTimeout(() => wrap.classList.remove('week-picker-shake', 'week-picker-warning'), 500);
+}
+
+// ——— Period picker (calendar, week selection) ———
+
+function dateToKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function renderPeriodCalendar(viewYear, viewMonth, pendingWeekKey) {
+  el('pickerMonthYear').textContent = `${monthNames[viewMonth - 1]} ${viewYear}`;
+
+  const first = new Date(viewYear, viewMonth - 1, 1);
+  const dayOfWeek = first.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const start = new Date(first);
+  start.setDate(first.getDate() + mondayOffset);
+
+  const grid = el('pickerCalendarGrid');
+  grid.innerHTML = '';
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 7; col++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + row * 7 + col);
+      const key = dateToKey(d);
+      const weekKey = getWeekMonday(key);
+      const isCurrentMonth = d.getMonth() === viewMonth - 1;
+      const isSelected = weekKey === pendingWeekKey;
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'period-calendar-day';
+      if (!isCurrentMonth) cell.classList.add('other-month');
+      if (isSelected) cell.classList.add('week-selected');
+      cell.dataset.date = key;
+      cell.textContent = d.getDate();
+      cell.setAttribute('aria-label', key);
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function openPeriodPicker() {
+  const modal = el('periodPickerModal');
+  modal._pickerViewYear = currentYear;
+  modal._pickerViewMonth = currentMonth;
+  modal._pickerPendingWeekKey = selectedWeekKey || getCurrentWeekKey();
+
+  function render() {
+    renderPeriodCalendar(modal._pickerViewYear, modal._pickerViewMonth, modal._pickerPendingWeekKey);
+    el('pickerCalendarGrid').querySelectorAll('.period-calendar-day').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        modal._pickerPendingWeekKey = getWeekMonday(btn.dataset.date);
+        render();
+      });
+    });
+  }
+
+  function onPrevMonth() {
+    modal._pickerViewMonth--;
+    if (modal._pickerViewMonth < 1) { modal._pickerViewMonth = 12; modal._pickerViewYear--; }
+    render();
+  }
+  function onNextMonth() {
+    modal._pickerViewMonth++;
+    if (modal._pickerViewMonth > 12) { modal._pickerViewMonth = 1; modal._pickerViewYear++; }
+    render();
+  }
+
+  el('pickerPrevMonth').addEventListener('click', onPrevMonth);
+  el('pickerNextMonth').addEventListener('click', onNextMonth);
+
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
+  el('headerMonthTrigger').setAttribute('aria-expanded', 'true');
+  el('headerWeekTrigger').setAttribute('aria-expanded', 'true');
+
+  modal._pickerCleanup = () => {
+    el('pickerPrevMonth').removeEventListener('click', onPrevMonth);
+    el('pickerNextMonth').removeEventListener('click', onNextMonth);
+  };
+  modal._pickerPending = () => ({
+    viewYear: modal._pickerViewYear,
+    viewMonth: modal._pickerViewMonth,
+    pendingWeekKey: modal._pickerPendingWeekKey
+  });
+  modal._pickerRender = render;
+  render();
+}
+
+function applyPeriodPickerState() {
+  const modal = el('periodPickerModal');
+  const getPending = modal._pickerPending;
+  if (!getPending) return;
+  const { viewYear: y, viewMonth: m, pendingWeekKey: weekKey } = getPending();
+  currentYear = y;
+  currentMonth = m;
+  selectedWeekKey = weekKey;
+  renderMonthLabel();
+  renderWeekLabel();
+  updatePeriodLabel();
+  refreshSessions();
+  renderCurrentMonthSummaryInCard();
+  renderCurrentWeekGoals();
+  renderCurrentWeekSummary();
+}
+
+function closePeriodPicker() {
+  const modal = el('periodPickerModal');
+  applyPeriodPickerState();
+  if (modal._pickerCleanup) {
+    modal._pickerCleanup();
+    modal._pickerCleanup = null;
+  }
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
+  el('headerMonthTrigger').setAttribute('aria-expanded', 'false');
+  el('headerWeekTrigger').setAttribute('aria-expanded', 'false');
+}
+
+function pickerJumpToNow() {
+  const now = new Date();
+  const modal = el('periodPickerModal');
+  modal._pickerViewYear = now.getFullYear();
+  modal._pickerViewMonth = now.getMonth() + 1;
+  modal._pickerPendingWeekKey = getCurrentWeekKey();
+  if (modal._pickerRender) modal._pickerRender();
 }
 
 // ——— Рендер сессий ———
@@ -146,19 +273,6 @@ function renderCurrentMonthSummaryInCard() {
       monthInline.classList.add('visible-on-card-hover');
     }
     wrapEl.classList.add('hidden');
-  });
-}
-
-function renderDashboardMonthSummary() {
-  const section = el('dashboardMonthSummarySection');
-  el('dashboardMonthSummaryLabel').textContent = `(${monthNames[currentMonth - 1]} ${currentYear})`;
-  loadMonthNote(getMonthKey(currentYear, currentMonth)).then((summary) => {
-    if (!summary || !summary.trim()) {
-      section.classList.add('hidden');
-    } else {
-      section.classList.remove('hidden');
-      el('dashboardMonthSummaryDisplay').innerHTML = renderSummaryAsList(summary);
-    }
   });
 }
 
@@ -658,7 +772,6 @@ function showView(viewId) {
     dashboard.setAttribute('aria-hidden', 'false');
     el('headerDiaryInfo').style.display = 'none';
     el('headerTotalAll').classList.remove('hidden');
-    renderDashboardMonthSummary();
     renderDashboard();
   } else {
     settings.classList.remove('view--hidden');
@@ -726,48 +839,17 @@ function init() {
   el('btnToggleMonthSummaryInSection').addEventListener('click', showMonthSummaryInput);
   el('monthSummaryInput').addEventListener('blur', submitMonthSummary);
 
-  el('prevMonth').addEventListener('click', () => {
-    currentMonth--;
-    if (currentMonth < 1) { currentMonth = 12; currentYear--; }
-    renderMonthLabel();
-    clampSelectedWeekToMonth();
-    refreshSessions();
-    renderCurrentMonthSummaryInCard();
-  });
-  el('nextMonth').addEventListener('click', () => {
-    currentMonth++;
-    if (currentMonth > 12) { currentMonth = 1; currentYear++; }
-    renderMonthLabel();
-    clampSelectedWeekToMonth();
-    refreshSessions();
-    renderCurrentMonthSummaryInCard();
-  });
+  el('headerMonthTrigger').addEventListener('click', openPeriodPicker);
+  el('headerWeekTrigger').addEventListener('click', openPeriodPicker);
 
-  el('prevWeek').addEventListener('click', () => {
-    const prevKey = getPreviousWeekKey(selectedWeekKey);
-    if (!getWeekKeysInMonth(currentYear, currentMonth).includes(prevKey)) {
-      triggerWeekPickerWarning();
-      return;
+  el('periodPickerModal').querySelector('.period-picker-backdrop').addEventListener('click', closePeriodPicker);
+  el('pickerBtnNow').addEventListener('click', pickerJumpToNow);
+  el('pickerBtnOk').addEventListener('click', closePeriodPicker);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !el('periodPickerModal').classList.contains('hidden')) {
+      closePeriodPicker();
     }
-    selectedWeekKey = prevKey;
-    renderWeekLabel();
-    updatePeriodLabel();
-    renderCurrentWeekGoals();
-    renderSessions(sessionsListCache);
-    renderCurrentWeekSummary();
-  });
-  el('nextWeek').addEventListener('click', () => {
-    const nextKey = getNextWeekKey(selectedWeekKey);
-    if (!getWeekKeysInMonth(currentYear, currentMonth).includes(nextKey)) {
-      triggerWeekPickerWarning();
-      return;
-    }
-    selectedWeekKey = nextKey;
-    renderWeekLabel();
-    updatePeriodLabel();
-    renderCurrentWeekGoals();
-    renderSessions(sessionsListCache);
-    renderCurrentWeekSummary();
   });
 
   document.querySelectorAll('.sessions-view-toggle .toggle-btn').forEach((btn) => {

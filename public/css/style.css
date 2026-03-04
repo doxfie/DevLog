@@ -308,6 +308,232 @@ body {
 }
 
 /* ==========================================================================
+   Header period picker (month / week triggers)
+   ========================================================================== */
+
+#headerDiaryInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.header-period-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.header-period-trigger {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast), background var(--dur-fast);
+}
+.header-period-trigger:hover {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.header-period-sep {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+  margin: 0 0.1em;
+}
+
+.header-period-picker.week-picker-shake {
+  animation: week-picker-shake 0.4s var(--ease-spring);
+}
+.header-period-picker.week-picker-warning .header-period-trigger {
+  color: var(--error-bright);
+}
+
+/* ==========================================================================
+   Period picker modal (wheel)
+   ========================================================================== */
+
+.period-picker-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+}
+.period-picker-modal.hidden {
+  display: none;
+}
+
+.period-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.period-picker-dialog {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 380px;
+}
+
+.period-picker-title {
+  margin: 0 0 var(--space-lg);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.period-calendar {
+  margin-bottom: var(--space-lg);
+}
+
+.period-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.period-calendar-nav-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+.period-calendar-nav-btn:hover {
+  color: var(--accent-text);
+  border-color: var(--border-accent);
+  background: var(--accent-soft);
+}
+
+.period-calendar-month {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.period-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.period-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.period-calendar-day {
+  aspect-ratio: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.period-calendar-day:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.period-calendar-day.other-month {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.period-calendar-day.week-selected {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.period-calendar-day.week-selected:hover {
+  background: var(--accent-glow);
+  color: var(--accent-text);
+}
+
+.period-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.period-picker-jump {
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+.period-picker-jump:hover {
+  color: var(--accent-text);
+  border-color: var(--border-accent);
+  background: var(--accent-soft);
+}
+
+.period-picker-apply {
+  padding: 0.5rem 1.25rem;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast), box-shadow var(--dur-fast);
+}
+.period-picker-apply:hover {
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ==========================================================================
    Month & Week Summary in Header
    ========================================================================== */
 
@@ -655,7 +881,7 @@ body {
 }
 .sessions-view-toggle .pill-btn {
   padding: 0.3rem 0.65rem;
-  font-size: 12px;
+  font-size: 13px;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-sm) - 2px);
 }
@@ -899,36 +1125,6 @@ body {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.month-summary-section.dashboard-month-summary {
-  margin-bottom: var(--space-lg);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-lg);
-  box-shadow: var(--shadow-sm);
-  transition: border-color var(--dur-normal);
-}
-.month-summary-section.dashboard-month-summary:hover {
-  border-color: var(--border-hover);
-}
-.month-summary-section.dashboard-month-summary h2 { color: #fff; }
-
-.month-summary-display {
-  min-height: 3rem;
-  padding: var(--space-sm) var(--space-md);
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-.month-summary-display:empty::before {
-  content: 'Итоги месяца не заполнены. Заполни их во вкладке «Дневник».';
-  color: var(--text-muted);
-}
-
 /* ==========================================================================
    Week Goals
    ========================================================================== */
@@ -1060,16 +1256,6 @@ body {
   list-style-type: disc;
 }
 .goals-summary-ul li {
-  margin-bottom: 0.35em;
-  color: var(--text-muted);
-  word-break: break-word;
-}
-.month-summary-display .goals-summary-ul {
-  margin: 0;
-  padding-left: 1.25em;
-  list-style-type: disc;
-}
-.month-summary-display .goals-summary-ul li {
   margin-bottom: 0.35em;
   color: var(--text-muted);
   word-break: break-word;
@@ -1306,6 +1492,18 @@ body {
   font-family: var(--font-mono);
   font-size: 14px;
   color: var(--text);
+}
+.about-value--inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.about-sep {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+  font-family: var(--font-sans);
 }
 
 /* ==========================================================================

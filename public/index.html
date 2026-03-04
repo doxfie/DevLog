@@ -22,6 +22,11 @@
       </div>
       <div class="header-right">
         <div id="headerDiaryInfo">
+          <div class="header-period-picker" id="headerPeriodPicker">
+            <button type="button" class="header-period-trigger" id="headerMonthTrigger" aria-haspopup="dialog" aria-expanded="false">Январь 2026</button>
+            <span class="header-period-sep" aria-hidden="true">•</span>
+            <button type="button" class="header-period-trigger" id="headerWeekTrigger" aria-haspopup="dialog" aria-expanded="false">Неделя</button>
+          </div>
           <div class="month-summary">
             <span class="label" id="headerTotalLabel">Неделя:</span>
             <span id="monthTotal">0 ч 0 мин</span>
@@ -127,18 +132,6 @@
       <section class="sessions-section">
         <div class="sessions-header">
           <h2>Сессии</h2>
-          <div class="sessions-period-pickers">
-            <div class="month-picker">
-              <button type="button" class="pill-btn" id="prevMonth" aria-label="Предыдущий месяц">←</button>
-              <span id="currentMonthLabel">Январь 2026</span>
-              <button type="button" class="pill-btn" id="nextMonth" aria-label="Следующий месяц">→</button>
-            </div>
-            <div class="week-picker">
-              <button type="button" class="pill-btn" id="prevWeek" aria-label="Предыдущая неделя">←</button>
-              <span id="currentWeekLabel">Неделя</span>
-              <button type="button" class="pill-btn" id="nextWeek" aria-label="Следующая неделя">→</button>
-            </div>
-          </div>
           <div class="sessions-view-toggle" role="tablist">
             <button type="button" class="pill-btn toggle-btn active" data-range="week" aria-selected="true">Текущая неделя</button>
             <button type="button" class="pill-btn toggle-btn" data-range="month" aria-selected="false">Текущий месяц</button>
@@ -194,10 +187,6 @@
         </div>
       </section>
 
-      <section id="dashboardMonthSummarySection" class="month-summary-section dashboard-month-summary hidden">
-        <h2>Итоги месяца <span id="dashboardMonthSummaryLabel" class="muted"></span></h2>
-        <div id="dashboardMonthSummaryDisplay" class="month-summary-display"></div>
-      </section>
       <section class="dashboard-section">
         <h2>Часы по неделям <span id="dashboardWeeksLabel" class="dashboard-period"></span></h2>
         <div class="chart-wrap">
@@ -233,7 +222,11 @@
           <div class="about-grid">
             <div class="about-item">
               <span class="about-label">Версия</span>
-              <span class="about-value">1.0</span>
+              <span class="about-value about-value--inline">
+                <span>1.1.1</span>
+                <span class="about-sep" aria-hidden="true">•</span>
+                <span>23.02.2026</span>
+              </span>
             </div>
             <div class="about-item">
               <span class="about-label">Всего сессий</span>
@@ -255,6 +248,27 @@
         </section>
       </div>
     </main>
+  </div>
+  <div id="periodPickerModal" class="period-picker-modal hidden" role="dialog" aria-modal="true" aria-labelledby="periodPickerTitle" aria-hidden="true">
+    <div class="period-picker-backdrop"></div>
+    <div class="period-picker-dialog">
+      <h2 id="periodPickerTitle" class="period-picker-title">Выберите неделю</h2>
+      <div class="period-calendar">
+        <div class="period-calendar-nav">
+          <button type="button" class="period-calendar-nav-btn" id="pickerPrevMonth" aria-label="Предыдущий месяц">←</button>
+          <span class="period-calendar-month" id="pickerMonthYear">Апрель 2025</span>
+          <button type="button" class="period-calendar-nav-btn" id="pickerNextMonth" aria-label="Следующий месяц">→</button>
+        </div>
+        <div class="period-calendar-weekdays">
+          <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+        </div>
+        <div class="period-calendar-grid" id="pickerCalendarGrid" role="grid" aria-label="Календарь"></div>
+      </div>
+      <div class="period-picker-actions">
+        <button type="button" class="period-picker-jump" id="pickerBtnNow">Сейчас</button>
+        <button type="button" class="period-picker-apply" id="pickerBtnOk">ОК</button>
+      </div>
+    </div>
   </div>
   <div id="chartTooltip" class="chart-tooltip hidden" role="tooltip" aria-hidden="true"></div>
   <div id="toast" class="toast hidden" role="status" aria-live="polite">
