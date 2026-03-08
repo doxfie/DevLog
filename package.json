@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node --env-file=.env server.js",
     "dev": "node --env-file=.env --watch server.js",
+    "backup:telegram": "node --env-file=.env backup-telegram-cli.js",
     "import-excel": "node import-from-excel.js"
   },
   "dependencies": {

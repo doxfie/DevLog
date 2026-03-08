@@ -5,6 +5,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as db from './db.js';
 import { randomUUID } from 'crypto';
+import { startTelegramBackupScheduler } from './backup-telegram.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -191,4 +192,5 @@ app.put('/api/week-notes/:weekKey', (req, res) => {
 
 app.listen(port, () => {
   console.log(`DevLog: http://localhost:${port}`);
+  startTelegramBackupScheduler({ logger: console });
 });

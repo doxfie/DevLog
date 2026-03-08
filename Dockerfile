@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY server.js db.js ./
+COPY server.js db.js backup-telegram.js backup-telegram-cli.js ./
 COPY public ./public
 RUN mkdir -p /app/data
 

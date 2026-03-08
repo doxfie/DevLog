@@ -32,7 +32,47 @@ npm run dev
 
 - `npm start` — запуск сервера
 - `npm run dev` — сервер с автоперезапуском (--watch)
+- `npm run backup:telegram` — отправить SQLite-бэкап в Telegram вручную
 - `npm run import-excel "путь к .xlsm"` — импорт сессий из Excel
+
+
+## Бэкапы в Telegram
+
+Поддерживается автоматическая и ручная отправка SQLite-бэкапа в Telegram-чат.
+
+Быстрый запуск (4 шага):
+
+1. Создай Telegram-бота через `@BotFather` и получи токен.
+2. Узнай `chat_id` чата/группы, куда слать бэкапы.
+3. Заполни в `.env` минимум:
+   `TELEGRAM_BOT_TOKEN=...`
+   `TELEGRAM_BACKUP_CHAT_ID=...`
+4. Проверь отправку вручную: `npm run backup:telegram`.
+
+Обязательные переменные окружения:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_BACKUP_CHAT_ID`
+
+Опциональные переменные окружения:
+
+- `TELEGRAM_BACKUP_THREAD_ID`
+- `BACKUP_TELEGRAM_ENABLED=true|false`
+- `BACKUP_TELEGRAM_AUTORUN=true|false`
+- `BACKUP_TELEGRAM_HOUR=4`
+- `BACKUP_TELEGRAM_MINUTE=10`
+- `BACKUP_TELEGRAM_KEEP_FILES=14`
+- `BACKUP_TELEGRAM_DIR=./backups`
+- `BACKUP_TELEGRAM_HOST_LABEL`
+- `APP_TIMEZONE=Asia/Omsk`
+
+Ручной запуск:
+
+```bash
+npm run backup:telegram
+```
+
+При включенном автозапуске сервер проверяет время и отправляет один бэкап в день в заданные час/минуту.
 
 ## Настройка авторизации
 
@@ -57,6 +97,8 @@ SESSION_SECRET=случайная-строка-32+символов
 ```
 server.js              Express-сервер, API, авторизация, статика
 db.js                  SQLite: схема, CRUD сессий и заметок
+backup-telegram.js     Telegram-бэкап: создание/отправка бэкапа и планировщик
+backup-telegram-cli.js Ручной запуск Telegram-бэкапа
 import-from-excel.js   Утилита импорта из Excel
 Dockerfile             Node 20 Bookworm Slim (glibc → быстрая сборка без компиляции better-sqlite3)
 docker-compose.yml     Docker Compose конфигурация
