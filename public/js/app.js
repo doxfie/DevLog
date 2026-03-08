@@ -686,11 +686,10 @@ async function submitSession(e) {
       cancelEdit();
     } else {
       await createSession({ started_at, ended_at, breaks_minutes, notes });
-      form.notes.value = '';
+      if (getPauseStartedAt()) stopPause();
+      form.reset();
       form.breaks.value = '0';
       clearDraft();
-      if (getPauseStartedAt()) stopPause();
-      saveDraft();
     }
   } catch (err) {
     showToast(err.message || 'Ошибка сохранения');
