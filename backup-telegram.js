@@ -1,10 +1,20 @@
-import { promises as fs } from 'fs';
+import { promises as fs, readFileSync, createReadStream, createWriteStream } from 'fs';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
+import { pipeline } from 'stream/promises';
+import { createGzip } from 'zlib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'Asia/Omsk';
+const APP_VERSION = (() => {
+  try {
+    const packageJson = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
+    return String(packageJson.version || 'unknown');
+  } catch {
+    return 'unknown';
+  }
+})();
 const DEFAULT_HOUR = 4;
 const DEFAULT_MINUTE = 10;
 const DEFAULT_KEEP_FILES = 14;
@@ -62,8 +72,8 @@ function getNowParts(date = new Date()) {
   };
 }
 
-function formatOmskDateTime(date = new Date()) {
-  return new Intl.DateTimeFormat('ru-RU', {
+function formatBackupDateTime(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: APP_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
@@ -72,7 +82,10 @@ function formatOmskDateTime(date = new Date()) {
     minute: '2-digit',
     second: '2-digit',
     hourCycle: 'h23'
-  }).format(date);
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.filter((p) => p.type !== 'literal').map((p) => [p.type, p.value]));
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
 }
 
 function getConfigFromEnv() {
@@ -145,12 +158,20 @@ async function createDatabaseBackup(dbPath, backupFilePath) {
   }
 }
 
+async function createGzipArchive(sourceFilePath, archiveFilePath) {
+  await pipeline(
+    createReadStream(sourceFilePath),
+    createGzip({ level: 9 }),
+    createWriteStream(archiveFilePath)
+  );
+}
+
 async function pruneBackups(backupDir, keepFiles, logger = console) {
   if (keepFiles <= 0) return;
 
   const entries = await fs.readdir(backupDir, { withFileTypes: true });
   const files = entries
-    .filter((entry) => entry.isFile() && /^devlog-backup-\d{8}-\d{6}\.db$/.test(entry.name))
+    .filter((entry) => entry.isFile() && /^devlog-backup-\d{8}-\d{6}\.db\.gz$/.test(entry.name))
     .map((entry) => entry.name)
     .sort((a, b) => b.localeCompare(a));
 
@@ -166,21 +187,15 @@ async function pruneBackups(backupDir, keepFiles, logger = console) {
   );
 }
 
-function buildCaption({ filename, sizeBytes, reason }) {
-  const reasonLabel = reason === 'scheduled'
-    ? '\u043f\u043e \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044e'
-    : '\u0432\u0440\u0443\u0447\u043d\u0443\u044e';
-
+function buildCaption({ sizeBytes }) {
   return [
-    '\u{1F5C4} #backup_success',
+    '\u{1F4BE} #backup_success',
+    '\u2796\u2796\u2796\u2796\u2796\u2796\u2796\u2796\u2796',
     '\u2705 \u0411\u044d\u043a\u0430\u043f \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0441\u043e\u0437\u0434\u0430\u043d',
-    'DevLog backup',
-    '\u{1F433} \u0411\u0414: Docker',
-    '\u{1F4C1} \u0411\u0414 + \u0434\u0438\u0440\u0435\u043a\u0442\u043e\u0440\u0438\u044f',
+    `\u{1F30A} DevLog: ${APP_VERSION}`,
+    '\u{1F4C1} \u0422\u043e\u043b\u044c\u043a\u043e \u0411\u0414',
     `\u{1F4CF} \u0420\u0430\u0437\u043c\u0435\u0440: ${formatBytes(sizeBytes)}`,
-    `\u{1F4C5} \u0414\u0430\u0442\u0430 (${APP_TIMEZONE}): ${formatOmskDateTime(new Date())}`,
-    `\u{1F680} \u0417\u0430\u043f\u0443\u0441\u043a: ${reasonLabel}`,
-    `\u{1F4CE} ${filename}`
+    `\u{1F4C5} \u0414\u0430\u0442\u0430: ${formatBackupDateTime(new Date())}`
   ].join('\n');
 }
 
@@ -229,17 +244,19 @@ export async function runTelegramBackup({ logger = console, reason = 'manual' } 
 
   try {
     const { timestamp } = getNowParts();
-    const fileName = `devlog-backup-${timestamp}.db`;
+    const rawFileName = `devlog-backup-${timestamp}.db`;
+    const rawBackupPath = join(config.backupDir, rawFileName);
+    const fileName = `${rawFileName}.gz`;
     const backupPath = join(config.backupDir, fileName);
 
     logger.info(`[backup] Starting backup (${reason})...`);
-    await createDatabaseBackup(config.dbPath, backupPath);
+    await createDatabaseBackup(config.dbPath, rawBackupPath);
+    await createGzipArchive(rawBackupPath, backupPath);
+    await fs.unlink(rawBackupPath).catch(() => {});
 
     const stat = await fs.stat(backupPath);
     const caption = buildCaption({
-      filename: fileName,
-      sizeBytes: stat.size,
-      reason
+      sizeBytes: stat.size
     });
 
     await sendBackupToTelegram({
