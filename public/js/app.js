@@ -28,6 +28,7 @@ let sessionsListCache = [];
 let editingSessionId = null;
 let toastTimeoutId = null;
 let toastCountdownId = null;
+let sessionDurationIntervalId = null;
 
 // ——— Навигация: месяц и неделя ———
 
@@ -470,36 +471,40 @@ function setupAutoFillFields() {
     if (!el('fieldDate').value) {
       const { date } = await fetchNow();
       el('fieldDate').value = date;
+      updateValidationFromForm();
     }
   });
   el('fieldStartTime').addEventListener('focus', async () => {
     if (!el('fieldStartTime').value) {
       const { time } = await fetchNow();
       el('fieldStartTime').value = time;
+      updateValidationFromForm();
     }
   });
   el('fieldEndTime').addEventListener('focus', async () => {
     if (!el('fieldEndTime').value) {
       const { time } = await fetchNow();
       el('fieldEndTime').value = time;
+      updateValidationFromForm();
     }
   });
 }
 
 function setFormEditMode(sessionId) {
   editingSessionId = sessionId;
-  el('formTitle').textContent = 'Редактирование сессии';
+  el('formTitle').textContent = 'Сессия';
   el('btnSubmit').textContent = 'Сохранить изменения';
   el('btnCancelEdit').classList.remove('hidden');
 }
 
 function cancelEdit() {
   editingSessionId = null;
-  el('formTitle').textContent = 'Новая сессия';
+  el('formTitle').textContent = 'Сессия';
   el('btnSubmit').textContent = 'Добавить сессию';
   el('btnCancelEdit').classList.add('hidden');
   loadDraft();
   hideFormValidation();
+  renderSessionDurationHint();
 }
 
 function startEditSession(session) {
@@ -588,6 +593,56 @@ function buildStartedEnded(form) {
   return { started_at, ended_at, durationMinutes: durationMinutes(started_at, ended_at), isNextDay };
 }
 
+function getFormSessionDurationData(form) {
+  const date = form.date.value;
+  const startTime = form.startTime.value;
+  if (!date || !startTime) return null;
+
+  const startDate = new Date(`${date}T${startTime}:00`);
+  if (Number.isNaN(startDate.getTime())) return null;
+
+  let endDate = null;
+  let isLive = false;
+  if (form.endTime.value) {
+    const endTime = form.endTime.value;
+    endDate = new Date(`${date}T${endTime}:00`);
+    if (Number.isNaN(endDate.getTime())) return null;
+    if (endTime < startTime) {
+      endDate.setDate(endDate.getDate() + 1);
+    }
+  } else {
+    endDate = new Date();
+    isLive = true;
+  }
+
+  const totalMinutes = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / 60000));
+  const breaksMinutes = Math.max(0, parseInt(form.breaks.value, 10) || 0);
+  const pauseStartedAt = getPauseStartedAt();
+  const activePauseMinutes = pauseStartedAt ? Math.floor((Date.now() - pauseStartedAt) / 60000) : 0;
+  const studiedMinutesValue = Math.max(0, totalMinutes - (breaksMinutes + activePauseMinutes));
+
+  return { totalMinutes, studiedMinutes: studiedMinutesValue, isLive };
+}
+
+function renderSessionDurationHint() {
+  const form = el('sessionForm');
+  const hint = el('sessionDurationHint');
+  if (!form || !hint) return;
+
+  const data = getFormSessionDurationData(form);
+  if (!data) {
+    hint.classList.add('hidden');
+    hint.classList.remove('is-live');
+    hint.textContent = '';
+    return;
+  }
+
+  const studiedText = formatDuration(data.studiedMinutes);
+  hint.textContent = `Длительность: ${studiedText}`;
+  hint.classList.toggle('is-live', data.isLive);
+  hint.classList.remove('hidden');
+}
+
 const MAX_SESSION_HOURS = 16;
 
 function getFormValidation(form, payload) {
@@ -644,6 +699,7 @@ async function submitSession(e) {
   hideFormValidation();
   flashFormSuccess();
   refreshSessions();
+  renderSessionDurationHint();
 }
 
 function flashFormSuccess() {
@@ -656,6 +712,7 @@ function flashFormSuccess() {
 
 function updateValidationFromForm() {
   const form = el('sessionForm');
+  renderSessionDurationHint();
   if (!form.date.value || !form.startTime.value || !form.endTime.value) {
     hideFormValidation();
     return;
@@ -811,12 +868,17 @@ function init() {
   refreshSessions();
   renderCurrentMonthSummaryInCard();
   setupAutoFillFields();
+  renderSessionDurationHint();
+  sessionDurationIntervalId = setInterval(renderSessionDurationHint, 1000);
 
   document.body.addEventListener('input', (e) => {
     if (e.target.matches('textarea')) autoResizeTextarea(e.target);
   });
   setTimeout(resizeAllTextareas, 100);
-  window.addEventListener('beforeunload', saveDraft);
+  window.addEventListener('beforeunload', () => {
+    saveDraft();
+    if (sessionDurationIntervalId) clearInterval(sessionDurationIntervalId);
+  });
 
   el('sessionForm').addEventListener('submit', submitSession);
   el('sessionForm').addEventListener('keydown', (e) => {
@@ -825,7 +887,10 @@ function init() {
       el('sessionForm').requestSubmit();
     }
   });
-  el('btnPause').addEventListener('click', togglePause);
+  el('btnPause').addEventListener('click', () => {
+    togglePause();
+    renderSessionDurationHint();
+  });
 
   el('btnAddGoal').addEventListener('click', showAddGoalInput);
   el('goalNewInput').addEventListener('keydown', (e) => {
@@ -901,6 +966,7 @@ function init() {
     hideFormValidation();
     if (editingSessionId) cancelEdit();
     saveDraft();
+    renderSessionDurationHint();
   });
 
   el('fieldDate').addEventListener('input', () => { saveDraft(); updateValidationFromForm(); });

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevLog — дневник учебы</title>
+  <title>DevLog - дневник учебы</title>
+  <link id="appFavicon" rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -85,7 +86,10 @@
         </div>
       </section>
       <section class="form-section">
-        <h2 id="formTitle">Новая сессия</h2>
+        <div class="form-section-head">
+          <h2 id="formTitle">Сессия</h2>
+          <div id="sessionDurationHint" class="session-duration-hint hidden" aria-live="polite"></div>
+        </div>
         <button type="button" id="btnClearForm" class="btn-clear-form" title="Очистить форму">&#x2715;</button>
         <form id="sessionForm">
           <div class="row-fields">

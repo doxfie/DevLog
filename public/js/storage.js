@@ -2,6 +2,9 @@ import { el } from './utils.js';
 
 const DRAFT_KEY = 'devlog_draft';
 const PAUSE_KEY = 'devlog_pauseStartedAt';
+const APP_FAVICON = '/favicon.svg';
+const BREAK_FAVICON = '/favicon-break.svg';
+const BREAK_TITLE_PREFIX = 'Перерыв';
 
 // ——— Черновик формы ———
 
@@ -37,8 +40,43 @@ export function clearDraft() {
 
 let pauseStartedAt = null;
 let pauseIntervalId = null;
+let baseDocumentTitle = '';
+let shortAppTitle = '';
 
 export function getPauseStartedAt() { return pauseStartedAt; }
+
+function ensureBaseDocumentTitle() {
+  if (!baseDocumentTitle) baseDocumentTitle = document.title;
+  if (!shortAppTitle) {
+    const trimmed = baseDocumentTitle.trim();
+    shortAppTitle = (trimmed.split(/[—-]/)[0] || trimmed).trim() || 'DevLog';
+  }
+}
+
+function ensureFaviconLink() {
+  let iconLink = document.querySelector('link#appFavicon') || document.querySelector('link[rel~="icon"]');
+  if (!iconLink) {
+    iconLink = document.createElement('link');
+    iconLink.id = 'appFavicon';
+    iconLink.rel = 'icon';
+    iconLink.type = 'image/svg+xml';
+    document.head.appendChild(iconLink);
+  }
+  return iconLink;
+}
+
+function syncTabPauseState() {
+  ensureBaseDocumentTitle();
+  const iconLink = ensureFaviconLink();
+  if (pauseStartedAt) {
+    const min = getPauseElapsedMinutes();
+    document.title = `${BREAK_TITLE_PREFIX}: ${min} мин · ${shortAppTitle}`;
+    iconLink.setAttribute('href', BREAK_FAVICON);
+    return;
+  }
+  document.title = baseDocumentTitle;
+  iconLink.setAttribute('href', APP_FAVICON);
+}
 
 function getPauseElapsedMinutes() {
   if (!pauseStartedAt) return 0;
@@ -48,6 +86,7 @@ function getPauseElapsedMinutes() {
 function updatePauseElapsedDisplay() {
   const min = getPauseElapsedMinutes();
   el('pauseLabel').textContent = `${min} мин · Стоп`;
+  syncTabPauseState();
 }
 
 export function stopPause() {
@@ -63,6 +102,7 @@ export function stopPause() {
   pauseStartedAt = null;
   el('pauseLabel').textContent = 'Перерыв';
   el('btnPause').classList.remove('paused');
+  syncTabPauseState();
 }
 
 export function startPause() {

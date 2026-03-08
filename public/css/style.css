@@ -615,6 +615,16 @@ body {
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+.form-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding-right: 2.2rem;
+}
+.form-section-head h2 {
+  margin: 0;
+}
 
 .btn-clear-form {
   position: absolute;
@@ -781,6 +791,44 @@ body {
   letter-spacing: 0.02em;
 }
 
+.session-duration-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background: transparent;
+}
+.session-duration-hint.hidden {
+  display: none;
+}
+.session-duration-hint::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--text-muted);
+  opacity: 0.55;
+}
+.session-duration-hint.is-live {
+  color: var(--text-secondary);
+}
+.session-duration-hint.is-live::before {
+  background: var(--accent-dim);
+  opacity: 0.75;
+  animation: session-live-dot-blink 1.2s ease-in-out infinite;
+}
+@keyframes session-live-dot-blink {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 0.2; }
+}
 .form-validation {
   font-size: 13px;
   color: var(--text-secondary);
