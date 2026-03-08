@@ -168,14 +168,17 @@ async function pruneBackups(backupDir, keepFiles, logger = console) {
 }
 
 function buildCaption({ filename, sizeBytes, hostLabel, reason }) {
-  const reasonLabel = reason === 'scheduled' ? 'по расписанию' : 'вручную';
+  const reasonLabel = reason === 'scheduled'
+    ? '\u043f\u043e \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044e'
+    : '\u0432\u0440\u0443\u0447\u043d\u0443\u044e';
+
   return [
     'DevLog backup',
-    `Файл: ${filename}`,
-    `Размер: ${formatBytes(sizeBytes)}`,
-    `Время (${APP_TIMEZONE}): ${formatOmskDateTime(new Date())}`,
-    `Хост: ${hostLabel}`,
-    `Запуск: ${reasonLabel}`
+    `\u0424\u0430\u0439\u043b: ${filename}`,
+    `\u0420\u0430\u0437\u043c\u0435\u0440: ${formatBytes(sizeBytes)}`,
+    `\u0412\u0440\u0435\u043c\u044f (${APP_TIMEZONE}): ${formatOmskDateTime(new Date())}`,
+    `\u0425\u043e\u0441\u0442: ${hostLabel}`,
+    `\u0417\u0430\u043f\u0443\u0441\u043a: ${reasonLabel}`
   ].join('\n');
 }
 
