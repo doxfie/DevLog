@@ -89,7 +89,6 @@ function getConfigFromEnv() {
     token: process.env.TELEGRAM_BOT_TOKEN || '',
     chatId: process.env.TELEGRAM_BACKUP_CHAT_ID || '',
     threadId: process.env.TELEGRAM_BACKUP_THREAD_ID || '',
-    hostLabel: process.env.BACKUP_TELEGRAM_HOST_LABEL || process.env.HOSTNAME || 'unknown-host',
     dbPath,
     backupDir
   };
@@ -167,18 +166,21 @@ async function pruneBackups(backupDir, keepFiles, logger = console) {
   );
 }
 
-function buildCaption({ filename, sizeBytes, hostLabel, reason }) {
+function buildCaption({ filename, sizeBytes, reason }) {
   const reasonLabel = reason === 'scheduled'
     ? '\u043f\u043e \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044e'
     : '\u0432\u0440\u0443\u0447\u043d\u0443\u044e';
 
   return [
+    '\u{1F5C4} #backup_success',
+    '\u2705 \u0411\u044d\u043a\u0430\u043f \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0441\u043e\u0437\u0434\u0430\u043d',
     'DevLog backup',
-    `\u0424\u0430\u0439\u043b: ${filename}`,
-    `\u0420\u0430\u0437\u043c\u0435\u0440: ${formatBytes(sizeBytes)}`,
-    `\u0412\u0440\u0435\u043c\u044f (${APP_TIMEZONE}): ${formatOmskDateTime(new Date())}`,
-    `\u0425\u043e\u0441\u0442: ${hostLabel}`,
-    `\u0417\u0430\u043f\u0443\u0441\u043a: ${reasonLabel}`
+    '\u{1F433} \u0411\u0414: Docker',
+    '\u{1F4C1} \u0411\u0414 + \u0434\u0438\u0440\u0435\u043a\u0442\u043e\u0440\u0438\u044f',
+    `\u{1F4CF} \u0420\u0430\u0437\u043c\u0435\u0440: ${formatBytes(sizeBytes)}`,
+    `\u{1F4C5} \u0414\u0430\u0442\u0430 (${APP_TIMEZONE}): ${formatOmskDateTime(new Date())}`,
+    `\u{1F680} \u0417\u0430\u043f\u0443\u0441\u043a: ${reasonLabel}`,
+    `\u{1F4CE} ${filename}`
   ].join('\n');
 }
 
@@ -237,7 +239,6 @@ export async function runTelegramBackup({ logger = console, reason = 'manual' } 
     const caption = buildCaption({
       filename: fileName,
       sizeBytes: stat.size,
-      hostLabel: config.hostLabel,
       reason
     });
 
