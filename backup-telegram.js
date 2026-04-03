@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { promises as fs, readFileSync, createReadStream, createWriteStream } from 'fs';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -19,6 +20,7 @@ const DEFAULT_HOUR = 4;
 const DEFAULT_MINUTE = 10;
 const DEFAULT_KEEP_FILES = 14;
 const LOCK_FILE_NAME = '.telegram-backup.lock';
+const LAST_SENT_HASH_FILE = '.last-telegram-backup.sha256';
 
 function getEnvBoolean(name, fallback = true) {
   const value = process.env[name];
@@ -99,6 +101,7 @@ function getConfigFromEnv() {
     minute: parseIntWithFallback(process.env.BACKUP_TELEGRAM_MINUTE, DEFAULT_MINUTE, 0, 59),
     keepFiles: parseIntWithFallback(process.env.BACKUP_TELEGRAM_KEEP_FILES, DEFAULT_KEEP_FILES, 0, 3650),
     checkEveryMs: parseIntWithFallback(process.env.BACKUP_TELEGRAM_CHECK_EVERY_MS, 30_000, 10_000, 300_000),
+    skipIfUnchanged: getEnvBoolean('BACKUP_TELEGRAM_SKIP_IF_UNCHANGED', true),
     token: process.env.TELEGRAM_BOT_TOKEN || '',
     chatId: process.env.TELEGRAM_BACKUP_CHAT_ID || '',
     threadId: process.env.TELEGRAM_BACKUP_THREAD_ID || '',
@@ -147,6 +150,31 @@ async function releaseLock(lockPath, handle) {
   } catch {
     // no-op
   }
+}
+
+function hashFileSha256(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    const stream = createReadStream(filePath);
+    stream.on('error', reject);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+async function readLastSentHash(backupDir) {
+  const pathToFile = join(backupDir, LAST_SENT_HASH_FILE);
+  try {
+    const text = await fs.readFile(pathToFile, 'utf8');
+    const line = text.trim();
+    return line || null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeLastSentHash(backupDir, digestHex) {
+  await fs.writeFile(join(backupDir, LAST_SENT_HASH_FILE), `${digestHex}\n`, 'utf8');
 }
 
 async function createDatabaseBackup(dbPath, backupFilePath) {
@@ -251,6 +279,19 @@ export async function runTelegramBackup({ logger = console, reason = 'manual' } 
 
     logger.info(`[backup] Starting backup (${reason})...`);
     await createDatabaseBackup(config.dbPath, rawBackupPath);
+
+    const digest = await hashFileSha256(rawBackupPath);
+
+    if (config.skipIfUnchanged) {
+      const lastDigest = await readLastSentHash(config.backupDir);
+      if (lastDigest && lastDigest === digest) {
+        await fs.unlink(rawBackupPath).catch(() => {});
+        const message = 'Database unchanged since last successful Telegram backup; skip upload.';
+        logger.info(`[backup] ${message}`);
+        return { skipped: true, reason: message };
+      }
+    }
+
     await createGzipArchive(rawBackupPath, backupPath);
     await fs.unlink(rawBackupPath).catch(() => {});
 
@@ -267,6 +308,7 @@ export async function runTelegramBackup({ logger = console, reason = 'manual' } 
       caption
     });
 
+    await writeLastSentHash(config.backupDir, digest);
     await pruneBackups(config.backupDir, config.keepFiles, logger);
 
     logger.info(`[backup] Sent to Telegram: ${fileName} (${formatBytes(stat.size)}).`);
