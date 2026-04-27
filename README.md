@@ -127,7 +127,7 @@ public/
 
 ## Первая установка на VPS (Ubuntu 22.04 / 24.04)
 
-Цель: DevLog доступен по https://devlog.doxfie.top/login; контейнер слушает только 127.0.0.1:3000; Nginx на 443 + редирект 80→443; rate-limit на POST /login; UFW: SSH (порт 9720), 80, 443.
+Цель: DevLog доступен по https://devlog.doxfie.net/login; контейнер слушает только 127.0.0.1:3000; Nginx на 443 + редирект 80→443; rate-limit на POST /login; UFW: SSH (порт 9720), 80, 443.
 
 ### 1. Подготовка сервера
 
@@ -269,7 +269,7 @@ EOF
 sudo tee /etc/nginx/sites-available/devlog << 'EOF'
 server {
     listen 80;
-    server_name devlog.doxfie.top;
+    server_name devlog.doxfie.net;
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -282,7 +282,7 @@ EOF
 sudo ln -sf /etc/nginx/sites-available/devlog /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d devlog.doxfie.top
+sudo certbot --nginx -d devlog.doxfie.net
 ```
 
 **Финальный конфиг (443, редирект 80→443, rate-limit только на POST /login):**
@@ -291,16 +291,16 @@ sudo certbot --nginx -d devlog.doxfie.top
 sudo tee /etc/nginx/sites-available/devlog << 'EOF'
 server {
     listen 80;
-    server_name devlog.doxfie.top;
+    server_name devlog.doxfie.net;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name devlog.doxfie.top;
+    server_name devlog.doxfie.net;
 
-    ssl_certificate     /etc/letsencrypt/live/devlog.doxfie.top/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/devlog.doxfie.top/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/devlog.doxfie.net/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/devlog.doxfie.net/privkey.pem;
 
     location = /login {
         limit_req zone=devlog_login burst=5 nodelay;
@@ -325,7 +325,7 @@ EOF
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Проверка: `curl -I https://devlog.doxfie.top/login` — ожидай 200 OK. Лимит 5 req/min считает только POST на /login (GET не учитывается благодаря map в `devlog_rate_limit.conf`).
+Проверка: `curl -I https://devlog.doxfie.net/login` — ожидай 200 OK. Лимит 5 req/min считает только POST на /login (GET не учитывается благодаря map в `devlog_rate_limit.conf`).
 
 ### 7. Автодеплой (GitHub Actions)
 
