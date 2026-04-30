@@ -6,7 +6,7 @@ import tls from 'tls';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 import { pipeline } from 'stream/promises';
-import { createGzip } from 'zlib';
+import { createGunzip, createGzip } from 'zlib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'Asia/Omsk';
@@ -26,6 +26,7 @@ const TELEGRAM_API_HOST = 'api.telegram.org';
 const TELEGRAM_API_PORT = 443;
 const LOCK_FILE_NAME = '.telegram-backup.lock';
 const LAST_SENT_HASH_FILE = '.last-telegram-backup.sha256';
+const LAST_SCHEDULED_DATE_FILE = '.last-telegram-scheduled-backup-date';
 const SOCKS_REPLY_MESSAGES = new Map([
   [0x01, 'general SOCKS server failure'],
   [0x02, 'connection not allowed by ruleset'],
@@ -174,14 +175,68 @@ async function releaseLock(lockPath, handle) {
   }
 }
 
-function hashFileSha256(filePath) {
-  return new Promise((resolve, reject) => {
-    const hash = createHash('sha256');
-    const stream = createReadStream(filePath);
-    stream.on('error', reject);
-    stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
+function quoteIdentifier(name) {
+  return `"${String(name).replace(/"/g, '""')}"`;
+}
+
+function normalizeSqliteValue(value) {
+  if (Buffer.isBuffer(value)) {
+    return { type: 'buffer', value: value.toString('base64') };
+  }
+  return value;
+}
+
+function updateHashJson(hash, value) {
+  hash.update(JSON.stringify(value));
+  hash.update('\n');
+}
+
+function hashDatabaseContent(dbPath) {
+  const source = new Database(dbPath, { readonly: true, fileMustExist: true });
+  const hash = createHash('sha256');
+
+  try {
+    const schemaObjects = source
+      .prepare(
+        `SELECT type, name, tbl_name, sql
+         FROM sqlite_schema
+         WHERE name NOT LIKE 'sqlite_%'
+         ORDER BY type, name`
+      )
+      .all();
+
+    updateHashJson(hash, schemaObjects);
+
+    for (const table of schemaObjects.filter((entry) => entry.type === 'table')) {
+      const columns = source.prepare(`PRAGMA table_info(${quoteIdentifier(table.name)})`).all();
+      const columnNames = columns.map((column) => column.name);
+      const primaryKeyColumns = columns
+        .filter((column) => Number(column.pk) > 0)
+        .sort((a, b) => Number(a.pk) - Number(b.pk))
+        .map((column) => column.name);
+      const orderBy = primaryKeyColumns.length
+        ? primaryKeyColumns.map(quoteIdentifier).join(', ')
+        : 'rowid';
+
+      updateHashJson(hash, { table: table.name, columns });
+
+      const rows = source
+        .prepare(`SELECT * FROM ${quoteIdentifier(table.name)} ORDER BY ${orderBy}`)
+        .iterate();
+
+      for (const row of rows) {
+        const normalizedRow = {};
+        for (const columnName of columnNames) {
+          normalizedRow[columnName] = normalizeSqliteValue(row[columnName]);
+        }
+        updateHashJson(hash, normalizedRow);
+      }
+    }
+  } finally {
+    source.close();
+  }
+
+  return hash.digest('hex');
 }
 
 async function readLastSentHash(backupDir) {
@@ -197,6 +252,53 @@ async function readLastSentHash(backupDir) {
 
 async function writeLastSentHash(backupDir, digestHex) {
   await fs.writeFile(join(backupDir, LAST_SENT_HASH_FILE), `${digestHex}\n`, 'utf8');
+}
+
+async function readLastScheduledDate(backupDir) {
+  try {
+    const text = await fs.readFile(join(backupDir, LAST_SCHEDULED_DATE_FILE), 'utf8');
+    return text.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeLastScheduledDate(backupDir, dateKey) {
+  await ensureDirectory(backupDir);
+  await fs.writeFile(join(backupDir, LAST_SCHEDULED_DATE_FILE), `${dateKey}\n`, 'utf8');
+}
+
+async function findLatestBackupArchive(backupDir) {
+  try {
+    const entries = await fs.readdir(backupDir, { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile() && /^devlog-backup-\d{8}-\d{6}\.db\.gz$/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort((a, b) => b.localeCompare(a));
+    return files.length ? join(backupDir, files[0]) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function hashLatestBackupArchiveContent(backupDir, logger = console) {
+  const archivePath = await findLatestBackupArchive(backupDir);
+  if (!archivePath) return null;
+
+  const tempDbPath = join(backupDir, `.telegram-backup-hash-${randomUUID()}.db`);
+  try {
+    await pipeline(
+      createReadStream(archivePath),
+      createGunzip(),
+      createWriteStream(tempDbPath)
+    );
+    return hashDatabaseContent(tempDbPath);
+  } catch (error) {
+    logger.warn(`[backup] Could not inspect latest backup archive for unchanged check: ${error.message}`);
+    return null;
+  } finally {
+    await fs.unlink(tempDbPath).catch(() => {});
+  }
 }
 
 async function createDatabaseBackup(dbPath, backupFilePath) {
@@ -670,26 +772,34 @@ export async function runTelegramBackup({ logger = console, reason = 'manual' } 
 
   try {
     const { timestamp } = getNowParts();
+    logger.info(`[backup] Starting backup (${reason})...`);
+    const digest = hashDatabaseContent(config.dbPath);
+
+    if (config.skipIfUnchanged) {
+      const lastDigest = await readLastSentHash(config.backupDir);
+      if (lastDigest && lastDigest === digest) {
+        const message = 'Database unchanged since last successful Telegram backup; skip upload.';
+        logger.info(`[backup] ${message}`);
+        return { skipped: true, reason: message };
+      }
+
+      if (lastDigest) {
+        const latestArchiveDigest = await hashLatestBackupArchiveContent(config.backupDir, logger);
+        if (latestArchiveDigest && latestArchiveDigest === digest) {
+          await writeLastSentHash(config.backupDir, digest);
+          const message = 'Database unchanged since latest local Telegram backup archive; skip upload.';
+          logger.info(`[backup] ${message}`);
+          return { skipped: true, reason: message };
+        }
+      }
+    }
+
     const rawFileName = `devlog-backup-${timestamp}.db`;
     const rawBackupPath = join(config.backupDir, rawFileName);
     const fileName = `${rawFileName}.gz`;
     const backupPath = join(config.backupDir, fileName);
 
-    logger.info(`[backup] Starting backup (${reason})...`);
     await createDatabaseBackup(config.dbPath, rawBackupPath);
-
-    const digest = await hashFileSha256(rawBackupPath);
-
-    if (config.skipIfUnchanged) {
-      const lastDigest = await readLastSentHash(config.backupDir);
-      if (lastDigest && lastDigest === digest) {
-        await fs.unlink(rawBackupPath).catch(() => {});
-        const message = 'Database unchanged since last successful Telegram backup; skip upload.';
-        logger.info(`[backup] ${message}`);
-        return { skipped: true, reason: message };
-      }
-    }
-
     await createGzipArchive(rawBackupPath, backupPath);
     await fs.unlink(rawBackupPath).catch(() => {});
 
@@ -751,9 +861,16 @@ export function startTelegramBackupScheduler({ logger = console } = {}) {
     if (now.hour !== config.hour || now.minute !== config.minute) return;
     if (lastRunDateKey === now.dateKey) return;
 
+    const lastScheduledDate = await readLastScheduledDate(config.backupDir);
+    if (lastScheduledDate === now.dateKey) {
+      lastRunDateKey = now.dateKey;
+      return;
+    }
+
     running = true;
     try {
       await runTelegramBackup({ logger, reason: 'scheduled' });
+      await writeLastScheduledDate(config.backupDir, now.dateKey);
       lastRunDateKey = now.dateKey;
     } catch (error) {
       logger.error(`[backup] Scheduled backup failed: ${error.message}`);
