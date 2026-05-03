@@ -1,4 +1,4 @@
-import { el, escapeHtml, monthNames, formatDuration, formatWeekLabel, studiedMinutes, getWeekMonday } from './utils.js';
+import { el, escapeHtml, monthNames, formatDuration, formatWeekLabel, studiedMinutes, getWeekMonday, toDateKey } from './utils.js';
 import { loadSessionsByRange, loadStats } from './api.js';
 
 const DASHBOARD_WEEKS = 8;
@@ -303,25 +303,25 @@ export async function renderDashboard() {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const currentWeekMonday = getWeekMonday(now.toISOString().slice(0, 10));
+  const currentWeekMonday = getWeekMonday(toDateKey(now));
   const sortedWeeksList = [];
   const d = new Date(currentWeekMonday + 'T12:00:00');
   for (let i = 0; i < DASHBOARD_WEEKS; i++) {
-    sortedWeeksList.push(d.toISOString().slice(0, 10));
+    sortedWeeksList.push(toDateKey(d));
     d.setDate(d.getDate() - 7);
   }
   sortedWeeksList.reverse();
 
   const weekRangeEnd = new Date(sortedWeeksList[sortedWeeksList.length - 1] + 'T12:00:00');
   weekRangeEnd.setDate(weekRangeEnd.getDate() + 6);
-  const weekTo = weekRangeEnd.toISOString().slice(0, 10);
+  const weekTo = toDateKey(weekRangeEnd);
 
   const fromMonths = new Date(year - 1, month - 1, 1);
   const toMonths = new Date(year, month, 0);
 
   const [sessionsWeeks, sessionsMonths, stats] = await Promise.all([
     loadSessionsByRange(sortedWeeksList[0], weekTo),
-    loadSessionsByRange(fromMonths.toISOString().slice(0, 10), toMonths.toISOString().slice(0, 10)),
+    loadSessionsByRange(toDateKey(fromMonths), toDateKey(toMonths)),
     loadStats()
   ]);
 

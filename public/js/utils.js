@@ -54,7 +54,7 @@ export function formatTimeRange(started, ended) {
   return `${s}–${e}`;
 }
 
-function toDateKey(date) {
+export function toDateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
@@ -64,7 +64,7 @@ export function getWeekMonday(dateStr) {
   const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(d);
   monday.setDate(d.getDate() + diff);
-  return monday.toISOString().slice(0, 10);
+  return toDateKey(monday);
 }
 
 export function formatWeekLabel(mondayStr) {
