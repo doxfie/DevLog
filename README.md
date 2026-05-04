@@ -33,7 +33,6 @@ npm run dev
 - `npm start` — запуск сервера
 - `npm run dev` — сервер с автоперезапуском (--watch)
 - `npm run backup:telegram` — отправить SQLite-бэкап в Telegram вручную
-- `npm run import-excel "путь к .xlsm"` — импорт сессий из Excel
 
 
 ## Бэкапы в Telegram
@@ -100,7 +99,6 @@ server.js              Express-сервер, API, авторизация, ста
 db.js                  SQLite: схема, CRUD сессий и заметок
 backup-telegram.js     Telegram-бэкап: создание/отправка бэкапа и планировщик
 backup-telegram-cli.js Ручной запуск Telegram-бэкапа
-import-from-excel.js   Утилита импорта из Excel
 Dockerfile             Node 20 Bookworm Slim (glibc → быстрая сборка без компиляции better-sqlite3)
 docker-compose.yml     Docker Compose конфигурация
 public/
